@@ -9,6 +9,8 @@ class Pfscalibration < Formula
   depends_on "pkg-config" => :build
   depends_on "gnuplot"
   depends_on "libexif"
+  depends_on "jhead"
+  depends_on "dcraw"
   depends_on "homebrew/science/opencv"
 
   def install
@@ -19,7 +21,7 @@ class Pfscalibration < Formula
                           "--disable-dependency-tracking",
                           "--disable-silent-rules",
                           "--prefix=#{prefix}"
-    system "make", "install" # if this fails, try separate make/make install steps
+    system "make", "install"
   end
 
   test do
