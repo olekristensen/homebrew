@@ -7,7 +7,7 @@ class Pfscalibration < Formula
 
   depends_on "pfstools"
   depends_on "pkg-config" => :build
-  depends_on "gnuplot"
+  depends_on "gnuplot" => %w{with-x}
   depends_on "libexif"
   depends_on "jhead"
   depends_on "dcraw"
