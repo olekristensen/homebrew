@@ -2,14 +2,15 @@ require "formula"
 
 class Libressl < Formula
   homepage "http://www.libressl.org/"
-  url "http://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.0.5.tar.gz"
-  mirror "http://mirrors.nycbug.org/pub/OpenBSD/LibreSSL/libressl-2.0.5.tar.gz"
-  sha256 "3f5463b5deb93efd2ac4e23a20612a1ccf3299a569d03880bb204c90647dfc9a"
+  url "http://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.1.1.tar.gz"
+  mirror "https://raw.githubusercontent.com/DomT4/LibreMirror/master/LibreSSL/libressl-2.1.1.tar.gz"
+  sha256 "fb5ada41a75b31c8dd9ff013daca57b253047ad14e43f65d8b41879b7b8e3c17"
 
   bottle do
-    sha1 "9b3d8724069c68abd7b287e6bb98038643f4e258" => :mavericks
-    sha1 "b4ce593f44fd15ad5e8b98ca3c0ed6b424dc99f0" => :mountain_lion
-    sha1 "5fc127e5b5a9bcef3f2a89d532be2f13501ca596" => :lion
+    revision 2
+    sha1 "a98059642ac02c864875c002a78a7dbae0fc783a" => :yosemite
+    sha1 "f24b31201a7d85ae8b8b722e19224205daeda6c1" => :mavericks
+    sha1 "c26900c1475e0c840c7a11801a01098dd0ce65be" => :mountain_lion
   end
 
   head do
@@ -28,6 +29,7 @@ class Libressl < Formula
                           "--disable-silent-rules",
                           "--prefix=#{prefix}",
                           "--with-openssldir=#{etc}/libressl",
+                          "--sysconfdir=#{etc}/libressl",
                           "--with-enginesdir=#{lib}/engines"
 
     system "make"
@@ -36,6 +38,22 @@ class Libressl < Formula
 
     mkdir_p "#{etc}/libressl"
     touch "#{etc}/libressl/openssl.cnf"
+  end
+
+  def post_install
+    if (etc/"openssl/cert.pem").exist?
+      cp "#{etc}/openssl/cert.pem", "#{etc}/libressl"
+    else
+      touch "#{etc}/libressl/cert.pem"
+    end
+  end
+
+  def caveats; <<-EOS.undent
+    If you have OpenSSL installed, the .pem file has been copied
+    from there. Otherwise, a blank .pem file has been touched.
+    To add additional certificates, place .pem files in
+      #{etc}/libressl
+    EOS
   end
 
   test do

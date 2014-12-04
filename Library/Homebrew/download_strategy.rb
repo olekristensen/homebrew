@@ -287,10 +287,10 @@ end
 
 # This strategy extracts our binary packages.
 class CurlBottleDownloadStrategy < CurlDownloadStrategy
-  def initialize name, resource
+  def curl(*args)
+    mirror = ENV["HOMEBREW_SOURCEFORGE_MIRROR"]
+    args << "-G" << "-d" << "use_mirror=#{mirror}" if mirror
     super
-    mirror = ENV['HOMEBREW_SOURCEFORGE_MIRROR']
-    @url = "#{@url}?use_mirror=#{mirror}" if mirror
   end
 
   def stage
@@ -405,12 +405,16 @@ class SubversionDownloadStrategy < VCSDownloadStrategy
     end
   end
 
+  def fetch_args
+    []
+  end
+
   def fetch_repo target, url, revision=nil, ignore_externals=false
     # Use "svn up" when the repository already exists locally.
     # This saves on bandwidth and will have a similar effect to verifying the
     # cache as it will make any changes to get the right revision.
     svncommand = target.directory? ? 'up' : 'checkout'
-    args = ['svn', svncommand]
+    args = ['svn', svncommand] + fetch_args
     # SVN shipped with XCode 3.1.4 can't force a checkout.
     args << '--force' unless MacOS.version == :leopard
     args << url unless target.directory?
@@ -425,17 +429,8 @@ StrictSubversionDownloadStrategy = SubversionDownloadStrategy
 
 # Download from SVN servers with invalid or self-signed certs
 class UnsafeSubversionDownloadStrategy < SubversionDownloadStrategy
-  def fetch_repo target, url, revision=nil, ignore_externals=false
-    # Use "svn up" when the repository already exists locally.
-    # This saves on bandwidth and will have a similar effect to verifying the
-    # cache as it will make any changes to get the right revision.
-    svncommand = target.directory? ? 'up' : 'checkout'
-    args = ['svn', svncommand, '--non-interactive', '--trust-server-cert', '--force']
-    args << url unless target.directory?
-    args << target
-    args << '-r' << revision if revision
-    args << '--ignore-externals' if ignore_externals
-    quiet_safe_system(*args)
+  def fetch_args
+    %w[--non-interactive --trust-server-cert]
   end
 end
 
@@ -449,6 +444,8 @@ class GitDownloadStrategy < VCSDownloadStrategy
 
   def initialize name, resource
     super
+    @ref_type ||= :branch
+    @ref ||= "master"
     @shallow = resource.specs.fetch(:shallow) { true }
   end
 
@@ -478,11 +475,7 @@ class GitDownloadStrategy < VCSDownloadStrategy
   def stage
     dst = Dir.getwd
     @clone.cd do
-      if @ref_type and @ref
-        ohai "Checking out #@ref_type #@ref"
-      else
-        reset
-      end
+      ohai "Checking out #{@ref_type} #{@ref}"
       # http://stackoverflow.com/questions/160608/how-to-do-a-git-export-like-svn-export
       safe_system 'git', 'checkout-index', '-a', '-f', "--prefix=#{dst}/"
       checkout_submodules(dst) if submodules?
@@ -540,9 +533,7 @@ class GitDownloadStrategy < VCSDownloadStrategy
   end
 
   def update_repo
-    # Branches always need updated. The has_ref? check will only work if a ref
-    # has been specified; if there isn't one we always want an update.
-    if @ref_type == :branch || !@ref || !has_ref?
+    if @ref_type == :branch || !has_ref?
       quiet_safe_system 'git', 'fetch', 'origin'
     end
   end
@@ -552,24 +543,14 @@ class GitDownloadStrategy < VCSDownloadStrategy
     @clone.cd { update_submodules } if submodules?
   end
 
-  def checkout_args
-    ref = case @ref_type
-          when :branch, :tag, :revision then @ref
-          else `git symbolic-ref refs/remotes/origin/HEAD`.strip.split("/").last
-          end
-
-    %W{checkout -f #{ref}}
-  end
-
   def checkout
-    quiet_safe_system 'git', *checkout_args
+    quiet_safe_system "git", "checkout", "-f", @ref, "--"
   end
 
   def reset_args
     ref = case @ref_type
           when :branch then "origin/#@ref"
           when :revision, :tag then @ref
-          else "origin/HEAD"
           end
 
     %W{reset --hard #{ref}}
