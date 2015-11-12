@@ -1,9 +1,8 @@
-require 'formula'
-
 class GnuProlog < Formula
-  homepage 'http://www.gprolog.org/'
-  url 'http://gprolog.univ-paris1.fr/gprolog-1.4.4.tar.gz'
-  sha1 '658b0efa5d916510dcddbbd980d90bc4d43a6e58'
+  desc "Prolog compiler with constraint solving"
+  homepage "http://www.gprolog.org/"
+  url "http://gprolog.univ-paris1.fr/gprolog-1.4.4.tar.gz"
+  sha256 "18c0e9644b33afd4dd3cdf29f94c099ad820d65e0c99da5495b1ae43b4f2b18e"
 
   bottle do
     sha1 "8dc1b5782b6fb5e89c62fe3f5b07a908ddff6850" => :yosemite
@@ -15,15 +14,24 @@ class GnuProlog < Formula
   # http://sourceforge.net/p/gprolog/code/ci/784b3443a0a2f087c1d1e7976739fa517efe6af6
   patch do
     url "https://gist.githubusercontent.com/jacknagel/7549696/raw/3078eef282ca141c95a0bf74396f4248bbe34775/gprolog-clang.patch"
-    sha1 "8af7816a97bd1319fbd3ae52cedc02ccc9164d27"
+    sha256 "3b47551d96f23ab697f37a68ab206219ee29f747bc46b9f0cae9b60c5dafa3b2"
   end
 
   def install
-    cd 'src' do
+    cd "src" do
       system "./configure", "--prefix=#{prefix}", "--with-doc-dir=#{doc}"
       ENV.deparallelize
       system "make"
       system "make", "install"
     end
+  end
+
+  test do
+    (testpath/"test.pl").write <<-EOS.undent
+      :- initialization(main).
+      main :- write('Hello World!'), nl, halt.
+    EOS
+    system "#{bin}/gplc", "test.pl"
+    assert_match /Hello World!/, shell_output("./test")
   end
 end

@@ -1,31 +1,53 @@
-require "formula"
-
 class Ttfautohint < Formula
+  desc "Auto-hinter for TrueType fonts"
   homepage "http://www.freetype.org/ttfautohint"
-  url "https://downloads.sourceforge.net/project/freetype/ttfautohint/1.2/ttfautohint-1.2.tar.gz"
-  sha1 "d4c4c570139da9667744e086da57ee5a21872630"
+  url "https://downloads.sourceforge.net/project/freetype/ttfautohint/1.4.1/ttfautohint-1.4.1.tar.gz"
+  sha256 "46667e0abf9cd0e3db0abb2a46569d251948708f93c82c2b62f25eb46892ce15"
 
   bottle do
     cellar :any
-    sha1 "560b377ed563e03032b8ca14a6e23cf051c9e855" => :mavericks
-    sha1 "c2958652ba83dc5d2a34baebd2041b9b6832eb98" => :mountain_lion
-    sha1 "747d9dec24fffae7b4c2d5a76fe69527cc5b837d" => :lion
+    sha256 "4bb7c539560829509ee88e8da9b96ca1fec5f3089fd9ffca792ae77e15e75d1d" => :el_capitan
+    sha256 "998e9107b1a6fa606d9247e92f721e5a7f96217fd6cd91fab7e90f5eb03b3b2a" => :yosemite
+    sha256 "63e69aaf897ba65b1427c99f7ccf1a2eb1d0a03ebe35f3a0a392a33aec9dbd5e" => :mavericks
   end
+
+  head do
+    url "http://repo.or.cz/ttfautohint.git"
+    depends_on "bison" => :build
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "pkg-config" => :build
+    depends_on "libtool" => :build
+  end
+
+  option "with-qt", "Build ttfautohintGUI also"
 
   depends_on "pkg-config" => :build
   depends_on "freetype"
   depends_on "libpng"
   depends_on "harfbuzz"
+  depends_on "qt" => :optional
 
   def install
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}",
-                          "--with-qt=no"
-    system "make install"
+    args = %W[
+      --disable-dependency-tracking
+      --disable-silent-rules
+      --prefix=#{prefix}
+      --without-doc
+    ]
+
+    args << "--without-qt" if build.without? "qt"
+
+    system "./bootstrap" if build.head?
+    system "./configure", *args
+    system "make", "install"
   end
 
   test do
-    system "#{bin}/ttfautohint", "-V"
+    if build.with? "qt"
+      system "#{bin}/ttfautohintGUI", "-V"
+    else
+      system "#{bin}/ttfautohint", "-V"
+    end
   end
 end

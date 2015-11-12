@@ -1,38 +1,24 @@
-require "formula"
-
 class Geoip < Formula
+  desc "GeoIP databases in a number of formats"
   homepage "https://github.com/maxmind/geoip-api-c"
-
-  stable do
-    url "https://github.com/maxmind/geoip-api-c/archive/v1.6.3.tar.gz"
-    sha1 "7561dcb5ba928a3f190426709063829093283c32"
-  end
+  url "https://github.com/maxmind/geoip-api-c/releases/download/v1.6.7/GeoIP-1.6.7.tar.gz"
+  sha256 "18f3713146b6196f85b57a92bcfdc9aea3345e2d836531a6ac4a630ffc7fa559"
 
   head "https://github.com/maxmind/geoip-api-c.git"
 
   bottle do
     cellar :any
-    sha1 "51d9d1e2377d1ca0a7a7b0ddad1dd0186fc5943d" => :yosemite
-    sha1 "b6a33ccda947755487c46785d2b956fee1126509" => :mavericks
-    sha1 "474c737c49886154cf7801e17f219b8e08af27d8" => :mountain_lion
+    sha256 "5007ba7a919e80d07e574d7e3d6b386b9961cbe048a00cdca83d98eb14e4678b" => :el_capitan
+    sha256 "2969446d080958c831a017fc5343a126cdd76fde9695cfd012733f8ba4e84aaa" => :yosemite
+    sha256 "c17cecf7bc7064fe2bbb30168824f6383314668def98b325b16830cca29eeb1a" => :mavericks
   end
 
-  depends_on "autoconf" => :build
-  depends_on "automake" => :build
-  depends_on "libtool" => :build
   depends_on "geoipupdate" => :optional
 
   option :universal
 
   def install
     ENV.universal_binary if build.universal?
-
-    # Fixes a build error on Lion when configure does a variant of autoreconf
-    # that results in a botched Makefile, causing this error:
-    # No rule to make target '../libGeoIP/libGeoIP.la', needed by 'geoiplookup'
-    # This works on Snow Leopard also when it tries but fails to run autoreconf.
-    # Also fixes the tests by downloading required data file
-    system "./bootstrap"
 
     system "./configure", "--disable-dependency-tracking",
                           "--disable-silent-rules",
@@ -51,9 +37,9 @@ class Geoip < Formula
     cp Dir["#{legacy_data}/*"], geoip_data if legacy_data.exist?
 
     full = Pathname.new "#{geoip_data}/GeoIP.dat"
-    ln_s "GeoLiteCountry.dat", full unless full.exist? or full.symlink?
+    ln_s "GeoLiteCountry.dat", full unless full.exist? || full.symlink?
     full = Pathname.new "#{geoip_data}/GeoIPCity.dat"
-    ln_s "GeoLiteCity.dat", full unless full.exist? or full.symlink?
+    ln_s "GeoLiteCity.dat", full unless full.exist? || full.symlink?
   end
 
   test do

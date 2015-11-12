@@ -1,18 +1,27 @@
-require "formula"
-
 class Newlisp < Formula
+  desc "Lisp-like, general-purpose scripting language"
   homepage "http://www.newlisp.org/"
-  url "http://www.newlisp.org/downloads/newlisp-10.6.0.tgz"
-  sha1 "0f5ce581d070ff171cbef504308e578885aa5e72"
+  url "http://www.newlisp.org/downloads/newlisp-10.6.2.tgz"
+  sha256 "ae3ab77987cb2cfef4e986104be5be5ac9469317e9d74884c3ea89c2e4bb4040"
+
+  stable do
+    # fix the prefix in a source file
+    patch :DATA
+  end
+
+  bottle do
+    revision 1
+    sha256 "1cf0154b6a3728dc66321cafd346edbf068401de9ab132fedcaa25175633ec71" => :el_capitan
+    sha256 "f90c42e44fa55f29339f0136006abbf8357720d3a0983ffcde9c73f04ad03e77" => :yosemite
+    sha256 "1f99334ef4a7f02f046a6f748b763b266a742a838cf4079d89ed3caf5801af7d" => :mavericks
+  end
 
   devel do
-    url "http://www.newlisp.org/downloads/development/newlisp-10.6.1.tgz"
-    sha1 "6f7d06df961022f4319b0ea7227480847e221cb0"
+    url "http://www.newlisp.org/downloads/development/newlisp-10.6.4.tgz"
+    sha256 "1b769d8026241a02ac7e6fc326c5d9b99b976482a40a0c8d5c828df72275aa18"
   end
 
   depends_on "readline"
-
-  patch :DATA
 
   def install
     # Required to use our configuration
@@ -20,8 +29,8 @@ class Newlisp < Formula
 
     system "./configure-alt", "--prefix=#{prefix}", "--mandir=#{man}"
     system "make"
-    system "make check"
-    system "make install"
+    system "make", "check"
+    system "make", "install"
   end
 
   def caveats; <<-EOS.undent
@@ -44,7 +53,7 @@ end
 __END__
 
 --- a/guiserver/newlisp-edit.lsp
-+++ b/Users/gordy/tmp/newlisp-edit
++++ b/guiserver/newlisp-edit.lsp
 @@ -1,4 +1,4 @@
 -#!/usr/bin/newlisp
 +#!/usr/bin/env newlisp
@@ -56,7 +65,7 @@ __END__
  		(if (= ostype "Win32")
  			(catch (exec (string {newlisp.exe "} currentScriptFile {" } file " > " (string file "out"))) 'result)
 -			(catch (exec (string "/usr/bin/newlisp " currentScriptFile " " file)) 'result)
-+			(catch (exec (string "/usr/local/bin/newlisp " currentScriptFile " " file)) 'result)
++			(catch (exec (string "HOMEBREW_PREFIX/bin/newlisp " currentScriptFile " " file)) 'result)
  		)
  		(if (list? result)
  			(begin
@@ -65,7 +74,7 @@ __END__
  			(string newlispDir "/newlisp.exe") (string currentExtension " -C -w \"" $HOME "\""))
  		(gs:run-shell 'OutputArea 
 -			(string "/usr/bin/newlisp") (string currentExtension " -C -w " $HOME))
-+			(string "/usr/local/bin/newlisp") (string currentExtension " -C -w " $HOME))
++			(string "HOMEBREW_PREFIX/bin/newlisp") (string currentExtension " -C -w " $HOME))
  	)
  )
  

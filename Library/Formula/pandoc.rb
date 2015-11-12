@@ -1,25 +1,26 @@
-require "formula"
 require "language/haskell"
 
 class Pandoc < Formula
   include Language::Haskell::Cabal
 
-  homepage "http://johnmacfarlane.net/pandoc/"
-  url "https://hackage.haskell.org/package/pandoc-1.13.1/pandoc-1.13.1.tar.gz"
-  sha1 "8f3df1977cf9daa848640754515b733c13fd934a"
+  desc "Swiss-army knife of markup format conversion"
+  homepage "http://pandoc.org"
+  url "https://hackage.haskell.org/package/pandoc-1.15.1.1/pandoc-1.15.1.1.tar.gz"
+  sha256 "a70e0af56c294dbb1ba646df24f90b81542d060ec7167f70ff2b873ed7ed6d5e"
+
+  head "https://github.com/jgm/pandoc.git"
 
   bottle do
-    revision 1
-    sha1 "acceca6830120f47cc7b1ee9d05988dadc2b5f99" => :yosemite
-    sha1 "5e268465b7024f5241b6a6c88db849b78580d7cf" => :mavericks
-    sha1 "ff4aa7be2a28afb3d404c15a17b266bb4ef8f14b" => :mountain_lion
+    sha256 "3aaa65bd43d3d768d06fff00e58af6ec976a78ca6837469c1fbbae5b7e4d194d" => :el_capitan
+    sha256 "8d23b249fb30ef98e92c7ca0f4d783d05d96c4e4bfc054fe27a54b858db84025" => :yosemite
+    sha256 "dad2a70cddd0e0bf2d17970471942c4005f7da71fc0f735f0b5f402792dc0782" => :mavericks
   end
 
   depends_on "ghc" => :build
   depends_on "cabal-install" => :build
   depends_on "gmp"
 
-  fails_with(:clang) { build 425 } # clang segfaults on Lion
+  setup_ghc_compilers
 
   def install
     cabal_sandbox do
@@ -27,10 +28,19 @@ class Pandoc < Formula
       cabal_install "--prefix=#{prefix}"
     end
     cabal_clean_lib
+    (bash_completion/"pandoc").write `#{bin}/pandoc --bash-completion`
   end
 
   test do
-    system "pandoc", "-o", "output.html", prefix/"README"
-    assert (Pathname.pwd/"output.html").read.include? '<h1 id="synopsis">Synopsis</h1>'
+    input_markdown = <<-EOS.undent
+      # Homebrew
+
+      A package manager for humans. Cats should take a look at Tigerbrew.
+    EOS
+    expected_html = <<-EOS.undent
+      <h1 id="homebrew">Homebrew</h1>
+      <p>A package manager for humans. Cats should take a look at Tigerbrew.</p>
+    EOS
+    assert_equal expected_html, pipe_output("#{bin}/pandoc -f markdown -t html5", input_markdown)
   end
 end

@@ -1,52 +1,50 @@
-require 'formula'
-
 class GstPluginsUgly < Formula
-  homepage 'http://gstreamer.freedesktop.org/'
-  url 'http://gstreamer.freedesktop.org/src/gst-plugins-ugly/gst-plugins-ugly-1.4.4.tar.xz'
-  mirror 'http://ftp.osuosl.org/pub/blfs/svn/g/gst-plugins-ugly-1.4.4.tar.xz'
-  sha256 'afe2300130aaba910b8d5fab8d1fdf8b001ff4893ec1ac57b5d8766836cd81e9'
+  desc "GStreamer plugins (well-supported, possibly problematic for distributors)"
+  homepage "http://gstreamer.freedesktop.org/"
+  url "http://gstreamer.freedesktop.org/src/gst-plugins-ugly/gst-plugins-ugly-1.6.1.tar.xz"
+  sha256 "0cc3f90e4322efe1f774272e8fe5c185be37cf7999cd5ca7e0e0607e03d56a57"
 
   bottle do
-    sha1 "94d67df3849bca93e5779e5db96c7ed5972ddc0b" => :yosemite
-    sha1 "de79b2cad160c32f7f764356ca8a6142b8e4ad14" => :mavericks
-    sha1 "c8bf98c6744d147d1915451874f1c993900d4792" => :mountain_lion
+    sha256 "958267881bfd073976248539175861c6b751e85875bf14b960e6eba661765a77" => :el_capitan
+    sha256 "9459ec7705e5942c3fefd22a5f0f639a3c65b835d22f9cdec8a8c59dd636a0e2" => :yosemite
+    sha256 "24a14e9d342cd7291d5a42f96baab940fd6bcabdb2ad9500642b30f226e209c1" => :mavericks
   end
 
   head do
-    url 'git://anongit.freedesktop.org/gstreamer/gst-plugins-ugly'
+    url "git://anongit.freedesktop.org/gstreamer/gst-plugins-ugly"
 
-    depends_on :autoconf
-    depends_on :automake
-    depends_on :libtool
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
   end
 
-  depends_on 'pkg-config' => :build
-  depends_on 'gettext'
-  depends_on 'gst-plugins-base'
+  depends_on "pkg-config" => :build
+  depends_on "gettext"
+  depends_on "gst-plugins-base"
 
   # The set of optional dependencies is based on the intersection of
   # gst-plugins-ugly-0.10.17/REQUIREMENTS and Homebrew formulae
-  depends_on 'dirac' => :optional
-  depends_on 'mad' => :optional
-  depends_on 'jpeg' => :optional
-  depends_on 'libvorbis' => :optional
-  depends_on 'cdparanoia' => :optional
-  depends_on 'lame' => :optional
-  depends_on 'two-lame' => :optional
-  depends_on 'libshout' => :optional
-  depends_on 'aalib' => :optional
-  depends_on 'libcaca' => :optional
-  depends_on 'libdvdread' => :optional
-  depends_on 'libmpeg2' => :optional
-  depends_on 'a52dec' => :optional
-  depends_on 'liboil' => :optional
-  depends_on 'flac' => :optional
-  depends_on 'gtk+' => :optional
-  depends_on 'pango' => :optional
-  depends_on 'theora' => :optional
-  depends_on 'libmms' => :optional
-  depends_on 'x264' => :optional
-  depends_on 'opencore-amr' => :optional
+  depends_on "dirac" => :optional
+  depends_on "mad" => :optional
+  depends_on "jpeg" => :optional
+  depends_on "libvorbis" => :optional
+  depends_on "cdparanoia" => :optional
+  depends_on "lame" => :optional
+  depends_on "two-lame" => :optional
+  depends_on "libshout" => :optional
+  depends_on "aalib" => :optional
+  depends_on "libcaca" => :optional
+  depends_on "libdvdread" => :optional
+  depends_on "libmpeg2" => :optional
+  depends_on "a52dec" => :optional
+  depends_on "liboil" => :optional
+  depends_on "flac" => :optional
+  depends_on "gtk+" => :optional
+  depends_on "pango" => :optional
+  depends_on "theora" => :optional
+  depends_on "libmms" => :optional
+  depends_on "x264" => :optional
+  depends_on "opencore-amr" => :optional
   # Does not work with libcdio 0.9
 
   def install
@@ -67,8 +65,8 @@ class GstPluginsUgly < Formula
       # https://github.com/Homebrew/homebrew/issues/14078
       nbcflags = `pkg-config --cflags opencore-amrnb`.chomp
       wbcflags = `pkg-config --cflags opencore-amrwb`.chomp
-      ENV['AMRNB_CFLAGS'] = nbcflags + "-I#{HOMEBREW_PREFIX}/include/opencore-amrnb"
-      ENV['AMRWB_CFLAGS'] = wbcflags + "-I#{HOMEBREW_PREFIX}/include/opencore-amrwb"
+      ENV["AMRNB_CFLAGS"] = nbcflags + "-I#{HOMEBREW_PREFIX}/include/opencore-amrnb"
+      ENV["AMRWB_CFLAGS"] = wbcflags + "-I#{HOMEBREW_PREFIX}/include/opencore-amrwb"
     else
       args << "--disable-amrnb" << "--disable-amrwb"
     end

@@ -1,17 +1,17 @@
-# encoding: UTF-8
-require "formula"
-
 class Yaz < Formula
+  desc "Toolkit for Z39.50/SRW/SRU clients/servers"
   homepage "http://www.indexdata.com/yaz"
-  url "http://ftp.indexdata.dk/pub/yaz/yaz-5.6.0.tar.gz"
-  sha1 "ee317483ae1e8548c7cd8cf1ee5045e0dabd59e9"
+  url "http://ftp.indexdata.dk/pub/yaz/yaz-5.14.11.tar.gz"
+  sha256 "216bc0e76e3deb655017bb639e87f2175facfdc060138a550e290c383da2cf7a"
 
   bottle do
     cellar :any
-    sha1 "ba5549d93a9a474340392d3127899680380cadbc" => :yosemite
-    sha1 "0b83e77df4993e5062331d4b11248f0fbb51a96e" => :mavericks
-    sha1 "c2fc103235210cc6f0f0e3682560b7b5988b66e4" => :mountain_lion
+    sha256 "80a529237a94aed9cb637f1f61252e3fae20ad3d3b9156d1367da96df661cc81" => :el_capitan
+    sha256 "73db4d4cacc02c83d1cd2d97381c1f72474a05cc4e2a860cdbc9a8b7c95149e3" => :yosemite
+    sha256 "c433e6828a9c6b630eb771be906d5db298d9f6e51e504e0a7acca27882f7e9ea" => :mavericks
   end
+
+  option :universal
 
   depends_on "pkg-config" => :build
   depends_on "icu4c" => :recommended
@@ -19,6 +19,8 @@ class Yaz < Formula
   depends_on "libgcrypt" if build.with? "gnutls"
 
   def install
+    ENV.universal_binary if build.universal?
+
     system "./configure", "--disable-dependency-tracking",
                           "--prefix=#{prefix}",
                           "--with-xml2"

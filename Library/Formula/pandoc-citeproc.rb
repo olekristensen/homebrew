@@ -1,25 +1,24 @@
-require "formula"
 require "language/haskell"
 
 class PandocCiteproc < Formula
   include Language::Haskell::Cabal
 
+  desc "Library and executable for using citeproc with pandoc"
   homepage "https://github.com/jgm/pandoc-citeproc"
-  url "https://hackage.haskell.org/package/pandoc-citeproc-0.6/pandoc-citeproc-0.6.tar.gz"
-  sha1 "5236b4b4e201f94ab9f1bcd0d7e81c4271b46e8f"
+  url "https://hackage.haskell.org/package/pandoc-citeproc-0.8.0.1/pandoc-citeproc-0.8.0.1.tar.gz"
+  sha256 "f9e1edb8ac529d4177feb0c374cf2b31f03dfcb53eabc342adb43d5aeaa37269"
 
   bottle do
-    sha1 "6babd3e9d6264bcf678c5ea02140512c129528b4" => :mavericks
-    sha1 "41af56ace751f9a5ac85618eb5d718fd1402d416" => :mountain_lion
-    sha1 "b72a998686381016c0646264545c6bd554f3253e" => :lion
+    sha256 "5505151adf85ca2d15bcf55b26d8d0ce5f1c77006584f897ba55ce7ac023d099" => :el_capitan
+    sha256 "6e495d845dbee3e7b3de3adb69f82ad5ec8b005e2d38d1bc477355fff7c85392" => :yosemite
+    sha256 "739b5df3ca612de32bac6c698e01ac56c6e0f7509c04de0bab0efcc284a35ef3" => :mavericks
   end
 
   depends_on "ghc" => :build
   depends_on "cabal-install" => :build
-  depends_on "gmp"
-  depends_on "pandoc" => :recommended
+  depends_on "pandoc"
 
-  fails_with(:clang) { build 425 } # clang segfaults on Lion
+  setup_ghc_compilers
 
   def install
     cabal_sandbox do
@@ -40,6 +39,6 @@ class PandocCiteproc < Formula
       publisher="Cambridge University Press"
       }
     EOS
-    assert `pandoc-citeproc --bib2yaml #{bib}`.include? "- publisher-place: Cambridge"
+    system "pandoc-citeproc", "--bib2yaml", bib
   end
 end

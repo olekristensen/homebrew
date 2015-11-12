@@ -1,23 +1,23 @@
-require "formula"
-
 class Fibjs < Formula
+  desc "JavaScript on Fiber"
   homepage "http://fibjs.org"
-  url "https://github.com/xicilion/fibjs/archive/v0.1.1.tar.gz"
-  sha1 "59b819ee4d22b2a339f3bfc0dff115a5d8452256"
+  url "https://github.com/xicilion/fibjs/releases/download/v0.1.7/fibjs-0.1.7-fullsrc.zip"
+  sha256 "92dfef31422c848816f992bd651f029837d4788c66acb83c8b93a084dec257ae"
 
   head "https://github.com/xicilion/fibjs.git"
 
   bottle do
-    cellar :any
-    sha1 "5c9dee229c3c5eede978eabe3ec6ccc5b7c4a616" => :yosemite
-    sha1 "9eb15e12ad700529ad91bf0f294d349474dc7144" => :mavericks
-    sha1 "11120148b4943383ddd8779c6a4d18dba72735eb" => :mountain_lion
+    cellar :any_skip_relocation
+    revision 1
+    sha256 "c72b7627b6e3a8bca4219abd2e3f2d41261815f5df2a1a4d4386077a434c7aa9" => :el_capitan
+    sha256 "40878d250cee1260b1262c124e1736d2a4c1f9526edcf7e707402e92c1965faa" => :yosemite
+    sha256 "67a6f871801208598b647160af3779525fa366f8bfb47d663972a43091ebc881" => :mavericks
   end
 
   depends_on "cmake" => :build
 
   def install
-    system "./build", "Release", "-j#{ENV["HOMEBREW_MAKE_JOBS"]}"
+    system "./build", "Release", "-j#{ENV.make_jobs}"
     bin.install "bin/Darwin_Release/fibjs"
   end
 

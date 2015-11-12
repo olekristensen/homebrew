@@ -1,15 +1,15 @@
-require "formula"
-
 class Libsass < Formula
+  desc "C implementation of a Sass compiler"
   homepage "https://github.com/sass/libsass"
-  url "https://github.com/sass/libsass/archive/3.0.2.tar.gz"
-  sha1 "415e4377ec73fcf0bd7af949d65f7ca730be1e5c"
+  url "https://github.com/sass/libsass.git", :tag => "3.2.5", :revision => "0e6b4a2850092356aa3ece07c6b249f0221caced"
+  head "https://github.com/sass/libsass.git"
 
   bottle do
     cellar :any
-    sha1 "88f00899fb612aabe04a324cfc83bcf025aeb47e" => :yosemite
-    sha1 "6e0616f8296f687f8efdcbf4ddc66527a9676a25" => :mavericks
-    sha1 "d435e14e0a8a3886ba9dc301aed4db4baceb9fe6" => :mountain_lion
+    sha256 "aa42c22560ddbd035621ff0fbb1917dda2553f70cace3fff1c288bcb66b5fd45" => :el_capitan
+    sha256 "c89c308461247e28f4f3fc28b1f382a084dbd3e0e676b70795795584de8b1af7" => :yosemite
+    sha256 "a0ed9cd621f571ec0eb18257caf6fec86d71167b76940f6f117cc759ed03f3aa" => :mavericks
+    sha256 "0fc382b2657adf1c1ed6196846ceff50824343d9f7c9a9ad6d2c32eab4346981" => :mountain_lion
   end
 
   depends_on "autoconf" => :build
@@ -26,25 +26,26 @@ class Libsass < Formula
   end
 
   test do
+    # This will need to be updated when devel = stable due to API changes.
     (testpath/"test.c").write <<-EOS.undent
-      #include <sass_interface.h>
+      #include <sass_context.h>
       #include <string.h>
 
       int main()
       {
-        struct sass_context* sass_ctx = sass_new_context();
-        struct sass_options options;
-        options.output_style = SASS_STYLE_NESTED;
-        options.source_comments = 0;
-        options.image_path = "images";
-        options.include_paths = "";
-        sass_ctx->source_string = "a { color:blue; &:hover { color:red; } }";
-        sass_ctx->options = options;
-        sass_compile(sass_ctx);
-        if(sass_ctx->error_status) {
+        const char* source_string = "a { color:blue; &:hover { color:red; } }";
+        struct Sass_Data_Context* data_ctx = sass_make_data_context(strdup(source_string));
+        struct Sass_Options* options = sass_data_context_get_options(data_ctx);
+        sass_option_set_precision(options, 1);
+        sass_option_set_source_comments(options, false);
+        sass_data_context_set_options(data_ctx, options);
+        sass_compile_data_context(data_ctx);
+        struct Sass_Context* ctx = sass_data_context_get_context(data_ctx);
+        int err = sass_context_get_error_status(ctx);
+        if(err != 0) {
           return 1;
         } else {
-          return strcmp(sass_ctx->output_string, "a {\\n  color: blue; }\\n  a:hover {\\n    color: red; }\\n") != 0;
+          return strcmp(sass_context_get_output_string(ctx), "a {\\n  color: blue; }\\n  a:hover {\\n    color: red; }\\n") != 0;
         }
       }
     EOS

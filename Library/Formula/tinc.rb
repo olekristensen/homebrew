@@ -1,36 +1,30 @@
-require "formula"
-
 class Tinc < Formula
+  desc "Virtual Private Network (VPN) tool"
   homepage "http://www.tinc-vpn.org"
-  url "http://tinc-vpn.org/packages/tinc-1.0.24.tar.gz"
-  sha1 "e32f56b234922570a9a8a267b1143e2752133696"
-  revision 1
+  url "http://tinc-vpn.org/packages/tinc-1.0.26.tar.gz"
+  sha256 "2b4319ddb3bd2867e72532a233f640a58c2f4d83f1088183ae544b268646ba21"
 
   bottle do
-    sha1 "b41c2f938dc74d722fc671dba917162c593903ce" => :mavericks
-    sha1 "c6817e85d4a8c81a070f4cd30f0cd1d116b514bf" => :mountain_lion
-    sha1 "847939fa901a60bd465f94d4d850a1f1d3abf2d9" => :lion
+    sha256 "028353499ec60475476a59643463ab35cbd562c352b00ed6700b7e9ba8748a15" => :el_capitan
+    sha256 "2985e4a5eb9784448887857ed7ae3a7dc0ef9df4505d3592dec865f6f9bbaed0" => :yosemite
+    sha256 "0313b51953e300bf60c87722c8432c902c20d6b0fc484a03dc5796e3bbb87b6b" => :mavericks
   end
 
   devel do
-    url "http://www.tinc-vpn.org/packages/tinc-1.1pre10.tar.gz"
-    sha1 "085dcb66858dfb2ddaa6c0082c2b22b18bc65a97"
+    url "http://www.tinc-vpn.org/packages/tinc-1.1pre11.tar.gz"
+    sha256 "942594563d3aef926a2d04e9ece90c16daf1c700e99e3b91ff749e8377fbf757"
   end
 
   depends_on "lzo"
   depends_on "openssl"
 
   def install
-    # Tinc does not automatically link against libresolv on Mac OS X.
-    # A fix has been already merged upstream. When updating this formula
-    # make sure the following changes have been applied:
-    # https://github.com/gsliepen/tinc/commit/241670ec23d05800e0a04957d6293de9a39075fb
-    # and remove this comment in addition to the next line.
-    ENV.append "LDFLAGS", "-lresolv"
-
     system "./configure", "--prefix=#{prefix}", "--sysconfdir=#{etc}",
                           "--with-openssl=#{Formula["openssl"].opt_prefix}"
-    system "make"
     system "make", "install"
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{sbin}/tincd --version")
   end
 end

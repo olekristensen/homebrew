@@ -13,14 +13,15 @@ module OS
         when "10.6"  then "3.2.6"
         when "10.7"  then "4.6.3"
         when "10.8"  then "5.1.1"
-        when "10.9"  then "6.1.1"
-        when "10.10" then "6.1.1"
+        when "10.9"  then "6.2"
+        when "10.10" then "7.1"
+        when "10.11" then "7.1"
         else
           # Default to newest known version of Xcode for unreleased OSX versions.
-          if MacOS.version > "10.10"
-            "6.1.1"
+          if OS::Mac.prerelease?
+            "7.1"
           else
-            raise "Mac OS X '#{MacOS.version}' is invalid"
+            raise "OS X '#{MacOS.version}' is invalid"
           end
         end
       end
@@ -53,13 +54,13 @@ module OS
 
       # Ask Spotlight where Xcode is. If the user didn't install the
       # helper tools and installed Xcode in a non-conventional place, this
-      # is our only option. See: http://superuser.com/questions/390757
+      # is our only option. See: https://superuser.com/questions/390757
       def bundle_path
         MacOS.app_with_bundle_id(V4_BUNDLE_ID, V3_BUNDLE_ID)
       end
 
       def installed?
-        not prefix.nil?
+        !prefix.nil?
       end
 
       def version
@@ -75,9 +76,11 @@ module OS
 
         return "0" unless OS.mac?
 
+        return nil if !MacOS::Xcode.installed? && !MacOS::CLT.installed?
+
         %W[#{prefix}/usr/bin/xcodebuild #{which("xcodebuild")}].uniq.each do |path|
           if File.file? path
-            `#{path} -version 2>/dev/null` =~ /Xcode (\d(\.\d)*)/
+            Utils.popen_read(path, "-version") =~ /Xcode (\d(\.\d)*)/
             return $1 if $1
           end
         end
@@ -117,7 +120,9 @@ module OS
           when 50      then "5.0"
           when 51      then "5.1"
           when 60      then "6.0"
-          else "6.0"
+          when 61      then "6.1"
+          when 70      then "7.0"
+          else "7.0"
           end
         end
       end
@@ -160,8 +165,9 @@ module OS
 
       def latest_version
         case MacOS.version
-        when "10.10" then "600.0.56"
-        when "10.9"  then "600.0.56"
+        when "10.11" then "700.1.76"
+        when "10.10" then "700.1.76"
+        when "10.9"  then "600.0.57"
         when "10.8"  then "503.0.40"
         else
           "425.0.28"
@@ -174,7 +180,7 @@ module OS
         else
           version = `/usr/bin/clang --version`
         end
-        version = version[%r{clang-(\d+\.\d+\.\d+)}, 1] || "0"
+        version = version[/clang-(\d+\.\d+\.\d+(\.\d+)?)/, 1] || "0"
         version < latest_version
       end
 

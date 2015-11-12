@@ -1,11 +1,11 @@
-require "formula"
-
 class Couchpotatoserver < Formula
+  desc "Download movies automatically"
   homepage "https://couchpota.to"
-  url "https://github.com/RuudBurger/CouchPotatoServer/archive/build/2.6.0.tar.gz"
-  sha1 "7d7952daba686c840b9723495bf9f5bb61c8c6a8"
-
+  url "https://github.com/RuudBurger/CouchPotatoServer/archive/build/3.0.1.tar.gz"
+  sha256 "f08f9c6ac02f66c6667f17ded1eea4c051a62bbcbadd2a8673394019878e92f7"
   head "https://github.com/RuudBurger/CouchPotatoServer.git"
+
+  bottle :unneeded
 
   def install
     prefix.install_metafiles
@@ -48,5 +48,9 @@ class Couchpotatoserver < Formula
 
   def caveats
     "CouchPotatoServer defaults to port 5050."
+  end
+
+  test do
+    system "#{bin}/couchpotatoserver", "--help"
   end
 end

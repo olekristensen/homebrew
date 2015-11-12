@@ -1,17 +1,16 @@
-require "formula"
-
 class Libav < Formula
+  desc "Audio and video processing tools"
   homepage "https://libav.org/"
-  url "https://libav.org/releases/libav-11.tar.xz"
-  sha1 "21f3c7c2154c0ad703872f2faa65ef20d6b7a14f"
+  url "https://libav.org/releases/libav-11.4.tar.xz"
+  sha256 "0b7dabc2605f3a254ee410bb4b1a857945696aab495fe21b34c3b6544ff5d525"
+  revision 2
 
   head "git://git.libav.org/libav.git"
 
   bottle do
-    revision 1
-    sha1 "4e9ae48294c0a8895a1a8317a70ab1c1e65b9c0d" => :yosemite
-    sha1 "b090384d2f18e9fa4cda302a266ca0b74c930754" => :mavericks
-    sha1 "74be2bc63f46166e0883e9a2132eb87c5215c95e" => :mountain_lion
+    sha256 "ed32bdb580f771d661c2e7d5ee449d523b3233c2317207b84c8c102d85dc8e14" => :el_capitan
+    sha256 "52468f23de8f658ba2b9d74c86eca06971497607e03bda63ac59746f1d724351" => :yosemite
+    sha256 "cf5e6fb5519cb8941d96339a96b99270ebcda14763a8dafc9b9f6ca5985f1bb7" => :mavericks
   end
 
   option "without-faac", "Disable AAC encoder via faac"
@@ -19,7 +18,7 @@ class Libav < Formula
   option "without-x264", "Disable H.264 encoder via x264"
   option "without-xvid", "Disable Xvid MPEG-4 video encoder via xvid"
 
-  option "with-opencore-amr", "Enable AMR-NB de/encoding and AMR-WB decoding " +
+  option "with-opencore-amr", "Enable AMR-NB de/encoding and AMR-WB decoding " \
     "via libopencore-amrnb and libopencore-amrwb"
   option "with-openjpeg", "Enable JPEG 2000 de/encoding via OpenJPEG"
   option "with-openssl", "Enable SSL support"
@@ -43,6 +42,7 @@ class Libav < Formula
   depends_on "x264" => :recommended
   depends_on "xvid" => :recommended
 
+  depends_on "fontconfig" => :optional
   depends_on "freetype" => :optional
   depends_on "fdk-aac" => :optional
   depends_on "frei0r" => :optional
@@ -63,6 +63,7 @@ class Libav < Formula
     args = [
       "--disable-debug",
       "--disable-shared",
+      "--disable-indev=jack",
       "--prefix=#{prefix}",
       "--enable-gpl",
       "--enable-nonfree",
@@ -77,6 +78,7 @@ class Libav < Formula
     args << "--enable-gnutls" if build.with? "gnutls"
     args << "--enable-libfaac" if build.with? "faac"
     args << "--enable-libfdk-aac" if build.with? "fdk-aac"
+    args << "--enable-libfontconfig" if build.with? "fontconfig"
     args << "--enable-libfreetype" if build.with? "freetype"
     args << "--enable-libmp3lame" if build.with? "lame"
     args << "--enable-libopencore-amrnb" if build.with? "opencore-amr"
@@ -107,6 +109,9 @@ class Libav < Formula
   end
 
   test do
-    system "#{bin}/avconv -h"
+    # Create an example mp4 file
+    system "#{bin}/avconv", "-y", "-filter_complex",
+        "testsrc=rate=1:duration=1", "#{testpath}/video.mp4"
+    assert (testpath/"video.mp4").exist?
   end
 end

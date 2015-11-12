@@ -1,25 +1,24 @@
-require "formula"
-
 class Pyqt < Formula
-  homepage "http://www.riverbankcomputing.co.uk/software/pyqt"
-  url "https://downloads.sf.net/project/pyqt/PyQt4/PyQt-4.11.1/PyQt-mac-gpl-4.11.1.tar.gz"
-  sha1 "9d7478758957c60ac5007144a0dc7f157f4a5836"
+  desc "Python bindings for Qt"
+  homepage "https://www.riverbankcomputing.com/software/pyqt/intro"
+  url "https://downloads.sf.net/project/pyqt/PyQt4/PyQt-4.11.4/PyQt-mac-gpl-4.11.4.tar.gz"
+  sha256 "f178ba12a814191df8e9f87fb95c11084a0addc827604f1a18a82944225ed918"
 
   bottle do
     revision 1
-    sha1 "251fb1a136972de87c98d3d06a3f5e1d6b8351d4" => :yosemite
-    sha1 "43f5b59a2b08d5ed035016459ffce566577a6e42" => :mavericks
-    sha1 "e058c40214fa5bed6391e815cfe7b2473b2bbc98" => :mountain_lion
+    sha256 "6b388201f123ab3c390e08f4ff1c97e6c3ae7e4c8644fb86a2775a82bc812c19" => :el_capitan
+    sha256 "3e2e252c58bcf2692d948cfee0273f8aaf052c4d1084acbbad7ba44a43619aee" => :yosemite
+    sha256 "7fa85daa46dc9639ad1a5ce930cac1d06c722528b3caad466044b22221b2253d" => :mavericks
   end
 
-  depends_on :python => :recommended
+  option "without-python", "Build without python 2 support"
   depends_on :python3 => :optional
 
   if build.without?("python3") && build.without?("python")
     odie "pyqt: --with-python3 must be specified when using --without-python"
   end
 
-  depends_on 'qt'  # From their site: PyQt currently supports Qt v4 and will build against Qt v5
+  depends_on "qt"
 
   if build.with? "python3"
     depends_on "sip" => "with-python3"
@@ -29,23 +28,25 @@ class Pyqt < Formula
 
   def install
     # On Mavericks we want to target libc++, this requires a non default qt makespec
-    if ENV.compiler == :clang and MacOS.version >= :mavericks
+    if ENV.compiler == :clang && MacOS.version >= :mavericks
       ENV.append "QMAKESPEC", "unsupported/macx-clang-libc++"
     end
 
     Language::Python.each_python(build) do |python, version|
       ENV.append_path "PYTHONPATH", "#{Formula["sip"].opt_lib}/python#{version}/site-packages"
 
-      args = ["--confirm-license",
-              "--bindir=#{bin}",
-              "--destdir=#{lib}/python#{version}/site-packages",
-              "--sipdir=#{share}/sip"]
+      args = %W[
+        --confirm-license
+        --bindir=#{bin}
+        --destdir=#{lib}/python#{version}/site-packages
+        --sipdir=#{share}/sip
+      ]
 
       # We need to run "configure.py" so that pyqtconfig.py is generated, which
       # is needed by QGIS, PyQWT (and many other PyQt interoperable
       # implementations such as the ROS GUI libs). This file is currently needed
       # for generating build files appropriate for the qmake spec that was used
-      # to build Qt.  The alternatives provided by configure-ng.py is not
+      # to build Qt. The alternatives provided by configure-ng.py is not
       # sufficient to replace pyqtconfig.py yet (see
       # https://github.com/qgis/QGIS/pull/1508). Using configure.py is
       # deprecated and will be removed with SIP v5, so we do the actual compile
@@ -56,9 +57,10 @@ class Pyqt < Formula
       require "tmpdir"
       dir = Dir.mktmpdir
       begin
-        cp_r(Dir.glob('*'), dir)
+        cp_r(Dir.glob("*"), dir)
         cd dir do
           system python, "configure.py", *args
+          inreplace "pyqtconfig.py", Formula["qt"].prefix, Formula["qt"].opt_prefix
           (lib/"python#{version}/site-packages/PyQt4").install "pyqtconfig.py"
         end
       ensure
@@ -66,14 +68,14 @@ class Pyqt < Formula
       end
 
       # On Mavericks we want to target libc++, this requires a non default qt makespec
-      if ENV.compiler == :clang and MacOS.version >= :mavericks
+      if ENV.compiler == :clang && MacOS.version >= :mavericks
         args << "--spec" << "unsupported/macx-clang-libc++"
       end
 
       system python, "configure-ng.py", *args
       system "make"
       system "make", "install"
-      system "make", "clean"  # for when building against multiple Pythons
+      system "make", "clean" # for when building against multiple Pythons
     end
   end
 
@@ -83,25 +85,11 @@ class Pyqt < Formula
 
   test do
     Pathname("test.py").write <<-EOS.undent
-      import sys
-      from PyQt4 import QtGui, QtCore
-
-      class Test(QtGui.QWidget):
-          def __init__(self, parent=None):
-              QtGui.QWidget.__init__(self, parent)
-              self.setGeometry(300, 300, 400, 150)
-              self.setWindowTitle('Homebrew')
-              QtGui.QLabel("Python " + "{0}.{1}.{2}".format(*sys.version_info[0:3]) +
-                           " working with PyQt4. Quitting now...", self).move(50, 50)
-              QtCore.QTimer.singleShot(1500, QtGui.qApp, QtCore.SLOT("quit()"))
-
-      app = QtGui.QApplication([])
-      window = Test()
-      window.show()
-      sys.exit(app.exec_())
+      from PyQt4 import QtNetwork
+      QtNetwork.QNetworkAccessManager().networkAccessible()
     EOS
 
-    Language::Python.each_python(build) do |python, version|
+    Language::Python.each_python(build) do |python, _version|
       system python, "test.py"
     end
   end

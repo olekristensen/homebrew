@@ -1,27 +1,25 @@
-require "formula"
-
 class Tcpreplay < Formula
+  desc "Replay saved tcpdump files at arbitrary speeds"
   homepage "http://tcpreplay.appneta.com"
-  url "https://github.com/appneta/tcpreplay/releases/download/v4.0.5/tcpreplay-4.0.5.tar.gz"
-  sha1 "878970d77e1482c9b26ac19eb2d125915a900f9b"
+  url "https://github.com/appneta/tcpreplay/releases/download/v4.1.0/tcpreplay-4.1.0.tar.gz"
+  sha256 "ad285b08d7a61ed88799713c4c5d657a7a503eee832304d3a767f67efe5d1a20"
 
   bottle do
     cellar :any
     revision 1
-    sha1 "41ac901cbb00f327c68d6bdcfd0ff635d889b307" => :yosemite
-    sha1 "c248e2ef79aab230d8e8e1f5ee73194725adf496" => :mavericks
-    sha1 "cf7683e9724b917bbf24bfa27985a0ade9c26670" => :mountain_lion
+    sha256 "03bfe9130780358c6a9d37e8b663f84c0e939b03c5efa87c90985584d95d2cbc" => :el_capitan
+    sha256 "26ae99b72e3dc9feb27db71dd1f49de8734aff9debc1ed279c5a359fa5d4fece" => :yosemite
+    sha256 "ab0379428462fbdc2653feae2bcc404cf6b6d2129ddf0461019c53794ce87e4f" => :mavericks
   end
 
   depends_on "libdnet" => :recommended
 
-  devel do
-    url "https://github.com/appneta/tcpreplay/releases/download/v4.1.0beta2/tcpreplay-4.1.0beta2.tar.gz"
-    sha1 "63c2e5cb17e65bd5072661b43553dc7efc48e881"
-    version "4.1.0-b2"
-  end
-
   def install
+    # Recognise .tbd files inside Xcode 7 as valid.
+    # https://github.com/appneta/tcpreplay/pull/202
+    # Merged but into configure.ac, so inreplace here to avoid needing autotools.
+    inreplace "configure", "for ext in .dylib .so", "for ext in .dylib .so .tbd"
+
     system "./configure", "--disable-dependency-tracking",
                           "--disable-debug",
                           "--prefix=#{prefix}",

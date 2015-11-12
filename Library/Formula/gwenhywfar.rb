@@ -1,25 +1,26 @@
-require 'formula'
-
 class Gwenhywfar < Formula
-  homepage 'http://www.aqbanking.de/'
-  url 'http://www.aquamaniac.de/sites/download/download.php?package=01&release=67&file=01&dummy=gwenhywfar-4.3.3.tar.gz'
-  sha1 'c2ba4c45f1eeb379db6c2ae09122c592893f3bd0'
-  head 'http://devel.aqbanking.de/svn/gwenhywfar/trunk'
-  revision 2
+  desc "Utility library required by aqbanking and related software"
+  homepage "http://www.aqbanking.de/"
+  url "http://www2.aquamaniac.de/sites/download/download.php?package=01&release=01&file=01&dummy=gwenhywfar-4.14.0.tar.gz"
+  sha256 "7e0ec2f1cab7d22a5ae0066e0ef827d4affec59470b1bdbc42132b58a903dd03"
+  head "http://git.aqbanking.de/git/gwenhywfar.git"
 
-  devel do
-    url 'http://www2.aquamaniac.de/sites/download/download.php?package=01&release=76&file=01&dummy=gwenhywfar-4.12.0beta.tar.gz'
-    sha1 '02fe19f12970cf94c495ba78a99f492f0a9067b0'
+  bottle do
+    sha256 "46680498dc76f514f537dfd8881df82ad8bb41c48eca6c0133cf10aea3839506" => :el_capitan
+    sha256 "04f45fcee06842a6e767b10e1a003a3f232486de5ac39104b4f98d9488a56078" => :yosemite
+    sha256 "0969c806c101ab0fe17652bbb3727ef57f276216e8a645247185b15d30c76d87" => :mavericks
   end
 
-  depends_on 'pkg-config' => :build
-  depends_on 'gettext'
-  depends_on 'gnutls'
-  depends_on 'libgcrypt'
-  depends_on 'gtk+' => :optional
-  depends_on 'qt' => :optional
+  option "without-cocoa", "Build without cocoa support"
+  option "with-check", "Run build-time check"
 
-  option 'without-cocoa', 'Build without cocoa support'
+  depends_on "pkg-config" => :build
+  depends_on "gettext"
+  depends_on "gnutls"
+  depends_on "openssl"
+  depends_on "libgcrypt"
+  depends_on "gtk+" => :optional
+  depends_on "qt" => :optional
 
   def install
     guis = []
@@ -30,7 +31,22 @@ class Gwenhywfar < Formula
     system "./configure", "--disable-debug",
                           "--disable-dependency-tracking",
                           "--prefix=#{prefix}",
-                          "--with-guis=#{guis.join(' ')}"
-    system "make install"
+                          "--with-guis=#{guis.join(" ")}"
+    system "make", "check" if build.with? "check"
+    system "make", "install"
+  end
+
+  test do
+    (testpath/"test.c").write <<-EOS.undent
+      #include <gwenhywfar/gwenhywfar.h>
+
+      int main()
+      {
+        GWEN_Init();
+        return 0;
+      }
+    EOS
+    system ENV.cc, "test.c", "-I#{include}/gwenhywfar4", "-L#{lib}", "-lgwenhywfar", "-o", "test"
+    system "./test"
   end
 end

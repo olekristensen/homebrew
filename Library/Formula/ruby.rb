@@ -1,14 +1,14 @@
-require "formula"
-
 class Ruby < Formula
+  desc "Powerful, clean, object-oriented scripting language"
   homepage "https://www.ruby-lang.org/"
-  url "http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.5.tar.bz2"
-  sha256 "0241b40f1c731cb177994a50b854fb7f18d4ad04dcefc18acc60af73046fb0a9"
+  url "https://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.3.tar.bz2"
+  sha256 "c745cb98b29127d7f19f1bf9e0a63c384736f4d303b83c4f4bda3c2ee3c5e41f"
 
   bottle do
-    sha1 "5bca9a9b689a3fb23e4c6660e1e3256c39fc62c9" => :yosemite
-    sha1 "80c5424e125d3493d3423399a9c3933b4108ac98" => :mavericks
-    sha1 "601037982116fbdd5389cb7dcf2e1bf2c5abea4e" => :mountain_lion
+    sha256 "13b2a0096f65a74b31a6055bf421332930b2c41101ed2c507d5d0c6a5b9b5770" => :el_capitan
+    sha256 "45f8ba8eb5cb90ba89e0bf950148be4f50a88d3d1daf496b954d288543025735" => :yosemite
+    sha256 "40b34f18f354dc2bb55fdae3082c1004483f44141628c473a5fe0c0882fdee80" => :mavericks
+    sha256 "ae3460dc786fd5ad45d984a700ccb134cdab445da3c6c2fa8053136d2a9ff1f3" => :mountain_lion
   end
 
   head do
@@ -17,7 +17,7 @@ class Ruby < Formula
   end
 
   option :universal
-  option "with-suffix", "Suffix commands with '21'"
+  option "with-suffix", "Suffix commands with '22'"
   option "with-doc", "Install documentation"
   option "with-tcltk", "Install with Tcl/Tk support"
 
@@ -48,7 +48,7 @@ class Ruby < Formula
       args << "--with-arch=#{Hardware::CPU.universal_archs.join(",")}"
     end
 
-    args << "--program-suffix=21" if build.with? "suffix"
+    args << "--program-suffix=22" if build.with? "suffix"
     args << "--with-out-ext=tk" if build.without? "tcltk"
     args << "--disable-install-doc" if build.without? "doc"
     args << "--disable-dtrace" unless MacOS::CLT.installed?
@@ -62,23 +62,45 @@ class Ruby < Formula
       Formula["openssl"].opt_prefix
     ]
 
-    %w[readline gdbm gmp libffi].each { |dep|
+    %w[readline gdbm gmp libffi].each do |dep|
       paths << Formula[dep].opt_prefix if build.with? dep
-    }
+    end
 
     args << "--with-opt-dir=#{paths.join(":")}"
 
     system "./configure", *args
+
+    # Ruby has been configured to look in the HOMEBREW_PREFIX for the
+    # sitedir and vendordir directories; however we don't actually want to create
+    # them during the install.
+    #
+    # These directories are empty on install; sitedir is used for non-rubygems
+    # third party libraries, and vendordir is used for packager-provided libraries.
+    inreplace "tool/rbinstall.rb" do |s|
+      s.gsub! 'prepare "extension scripts", sitelibdir', ""
+      s.gsub! 'prepare "extension scripts", vendorlibdir', ""
+      s.gsub! 'prepare "extension objects", sitearchlibdir', ""
+      s.gsub! 'prepare "extension objects", vendorarchlibdir', ""
+    end
+
     system "make"
     system "make", "install"
+  end
 
+  def post_install
     # Customize rubygems to look/install in the global gem directory
     # instead of in the Cellar, making gems last across reinstalls
-    (lib/"ruby/#{abi_version}/rubygems/defaults/operating_system.rb").write rubygems_config
+    config_file = lib/"ruby/#{abi_version}/rubygems/defaults/operating_system.rb"
+    config_file.unlink if config_file.exist?
+    config_file.write rubygems_config
+
+    # Create the sitedir and vendordir that were skipped during install
+    mkdir_p `#{bin}/ruby -e 'require "rbconfig"; print RbConfig::CONFIG["sitearchdir"]'`
+    mkdir_p `#{bin}/ruby -e 'require "rbconfig"; print RbConfig::CONFIG["vendorarchdir"]'`
   end
 
   def abi_version
-    "2.1.0"
+    "2.2.0"
   end
 
   def rubygems_config; <<-EOS.undent
@@ -87,6 +109,7 @@ class Ruby < Formula
         alias :old_default_dir :default_dir
         alias :old_default_path :default_path
         alias :old_default_bindir :default_bindir
+        alias :old_ruby :ruby
       end
 
       def self.default_dir
@@ -136,6 +159,10 @@ class Ruby < Formula
 
       def self.default_bindir
         "#{HOMEBREW_PREFIX}/bin"
+      end
+
+      def self.ruby
+        "#{opt_bin}/ruby#{"22" if build.with? "suffix"}"
       end
     end
     EOS

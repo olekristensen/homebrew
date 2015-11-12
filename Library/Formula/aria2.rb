@@ -1,26 +1,14 @@
-require "formula"
-
 class Aria2 < Formula
+  desc "Download with resuming and segmented downloading"
   homepage "http://aria2.sourceforge.net/"
-  revision 1
-
-  stable do
-    url "https://downloads.sourceforge.net/project/aria2/stable/aria2-1.18.8/aria2-1.18.8.tar.bz2"
-    sha1 "b6ad7064b1ea769e78f6a7dc9787a12cfc1e153f"
-
-    # Upstream patch to fix crash on OSX when proxy is used
-    # See: https://github.com/tatsuhiro-t/aria2/commit/9a931e7
-    patch do
-      url "https://github.com/tatsuhiro-t/aria2/commit/9a931e7.diff"
-      sha1 "386c2a831e9ab91524a1af1eeb3037a819b85ec5"
-    end
-  end
+  url "https://github.com/tatsuhiro-t/aria2/releases/download/release-1.19.2/aria2-1.19.2.tar.xz"
+  sha256 "3605486dd495cd8c2f672b7d0b763397989d831396862f15730697ebcf0ad53e"
 
   bottle do
-    cellar :any
-    sha1 "0bfe8bc96b7d95c0d45c9f84e725eb5eae64d1bf" => :yosemite
-    sha1 "1c8c6558e0016c7e1ac2f01485a676b28df8ac55" => :mavericks
-    sha1 "9199de445bcc3c9dd932781e96d1fa53dd7e922e" => :mountain_lion
+    cellar :any_skip_relocation
+    sha256 "4f86ad9fe0a36da39d9b92bfd13328f4be449f3b2ee8481a3ae1aa4563b478f4" => :el_capitan
+    sha256 "150f486de66ff284ab7491e22d9cc1b4b841904052d65b20a0b36af9833d7b45" => :yosemite
+    sha256 "40ce69ef73400de2cb5c2005b98bec28d4bcb64241eef3dbb548cef53b5ae20c" => :mavericks
   end
 
   depends_on "pkg-config" => :build
@@ -39,15 +27,14 @@ class Aria2 < Formula
       --without-libgcrypt
     ]
 
-    # system zlib and sqlite don't include .pc files
-    ENV["ZLIB_CFLAGS"] = "-I/usr/include"
-    ENV["ZLIB_LIBS"] = "-L/usr/lib -lz"
-    ENV["SQLITE3_CFLAGS"] = "-I/usr/include"
-    ENV["SQLITE3_LIBS"] = "-L/usr/lib -lsqlite3"
-
     system "./configure", *args
-    system "make install"
+    system "make", "install"
 
     bash_completion.install "doc/bash_completion/aria2c"
+  end
+
+  test do
+    system "#{bin}/aria2c", "http://brew.sh"
+    assert File.exist? "index.html"
   end
 end

@@ -1,24 +1,11 @@
-require "formula"
-
-# speed up head clone, see: https://developer.mozilla.org/en-US/docs/Developer_Guide/Source_Code/Mercurial/Bundles
+# Speed up head clone, see: https://developer.mozilla.org/en-US/docs/Developer_Guide/Source_Code/Mercurial/Bundles
 class HgBundleDownloadStrategy < CurlDownloadStrategy
-  def hgpath
-    MercurialDownloadStrategy.new(@name, @resource).hgpath
-  end
-
-  def fetch
-    @repo = @url.split("|").last
-    @url = @url.split("|").first
-    super()
-  end
-
   def stage
-    safe_system "mkdir mozilla-central"
-    safe_system hgpath, "init", "mozilla-central"
+    mkdir "mozilla-central"
+    quiet_safe_system hgpath, "init", "mozilla-central"
     chdir
-    safe_system hgpath, "unbundle", @tarball_path
-    safe_system hgpath, "pull", @repo
-    safe_system hgpath, "update"
+    quiet_safe_system hgpath, "unbundle", cached_location
+    quiet_safe_system hgpath, "pull", "--update", meta.fetch(:repo)
   end
 end
 
@@ -33,11 +20,13 @@ class Python273Requirement < Requirement
 end
 
 class Xulrunner < Formula
+  desc "Mozilla runtime package to bootstrap XUL+XPCOM applications"
   homepage "https://developer.mozilla.org/docs/XULRunner"
 
   stable do
-    url "https://ftp.mozilla.org/pub/mozilla.org/xulrunner/releases/latest/source/xulrunner-33.0.source.tar.bz2"
-    sha1 "0fbd6ac263d9c5811a5338252b28e3d08ddfbeb2"
+    # Always use direct URLs (releases/<version>/) instead of releases/latest/
+    url "https://archive.mozilla.org/pub/mozilla.org/xulrunner/releases/33.0/source/xulrunner-33.0.source.tar.bz2"
+    sha256 "99402cf84949e06bac72d8abbdecde57e8af465727001ed6849a34632f20bcdb"
 
     # https://github.com/Homebrew/homebrew/issues/33558
     depends_on MaximumMacOSRequirement => :mavericks
@@ -50,8 +39,9 @@ class Xulrunner < Formula
   end
 
   head do
-    url "https://ftp.mozilla.org/pub/mozilla.org/firefox/bundles/mozilla-central.hg|https://hg.mozilla.org/mozilla-central/",
-      :using => HgBundleDownloadStrategy
+    url "https://archive.mozilla.org/pub/mozilla.org/firefox/bundles/mozilla-central.hg",
+      :using => HgBundleDownloadStrategy, :repo => "https://hg.mozilla.org/mozilla-central"
+
     depends_on :hg => :build
     depends_on "gettext" => :build
   end
@@ -77,7 +67,7 @@ class Xulrunner < Formula
   resource "autoconf213" do
     url "http://ftpmirror.gnu.org/autoconf/autoconf-2.13.tar.gz"
     mirror "https://ftp.gnu.org/gnu/autoconf/autoconf-2.13.tar.gz"
-    sha1 "e4826c8bd85325067818f19b2b2ad2b625da66fc"
+    sha256 "f0611136bee505811e9ca11ca7ac188ef5323a8e2ef19cffd3edb3cf08fd791e"
   end
 
   def install

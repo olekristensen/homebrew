@@ -1,5 +1,3 @@
-require "formula"
-
 class Gcc < Formula
   def arch
     if Hardware::CPU.type == :intel
@@ -21,20 +19,23 @@ class Gcc < Formula
     `uname -r`.chomp
   end
 
-  homepage "http://gcc.gnu.org"
-  url "http://ftpmirror.gnu.org/gcc/gcc-4.9.2/gcc-4.9.2.tar.bz2"
-  mirror "ftp://gcc.gnu.org/pub/gcc/releases/gcc-4.9.2/gcc-4.9.2.tar.bz2"
-  sha1 "79dbcb09f44232822460d80b033c962c0237c6d8"
+  desc "GNU compiler collection"
+  homepage "https://gcc.gnu.org"
+  url "http://ftpmirror.gnu.org/gcc/gcc-5.2.0/gcc-5.2.0.tar.bz2"
+  mirror "https://ftp.gnu.org/gnu/gcc/gcc-5.2.0/gcc-5.2.0.tar.bz2"
+  sha256 "5f835b04b5f7dd4f4d2dc96190ec1621b8d89f2dc6f638f9f8bc1b1014ba8cad"
 
   bottle do
-    sha1 "178f037a3970fb9a86c07aad8215acbb9467ab63" => :yosemite
-    sha1 "a3e86973036b15371f2443eb05056d942f7d3dff" => :mavericks
-    sha1 "3d909968fc9bd6c505fd4ff20cf4bc5f4e0ba197" => :mountain_lion
+    revision 2
+    sha256 "8d0a4eba3bc23ec88661011d6a94bd8674fc34279eaf17fae757ab29df88d4b5" => :el_capitan
+    sha256 "29f60430f6c8ed4dd8bb79a41353b40cdf220ada77f3190726a1feef35bf3f1e" => :yosemite
+    sha256 "d28b3a3ec68f8019991278eb1ce71794cadc02a4d96335732a2ea36bd0487561" => :mavericks
   end
 
   option "with-java", "Build the gcj compiler"
   option "with-all-languages", "Enable all compilers and languages, except Ada"
   option "with-nls", "Build with native language support (localization)"
+  option "with-jit", "Build the jit compiler"
   option "without-fortran", "Build without the gfortran compiler"
   # enabling multilib on a host that can't run 64-bit results in build failures
   option "without-multilib", "Build without multilib support" if MacOS.prefer_64_bit?
@@ -42,7 +43,6 @@ class Gcc < Formula
   depends_on "gmp"
   depends_on "libmpc"
   depends_on "mpfr"
-  depends_on "cloog"
   depends_on "isl"
   depends_on "ecj" if build.with?("java") || build.with?("all-languages")
 
@@ -65,8 +65,12 @@ class Gcc < Formula
   end
 
   def version_suffix
-    version.to_s.slice(/\d\.\d/)
+    version.to_s.slice(/\d/)
   end
+
+  # Fix for libgccjit.so linkage on Darwin
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=64089
+  patch :DATA
 
   def install
     # GCC will suffer build errors if forced to use a particular linker.
@@ -76,40 +80,42 @@ class Gcc < Formula
       ENV["AS"] = ENV["AS_FOR_TARGET"] = "#{Formula["cctools"].bin}/as"
     end
 
-    # C, C++, ObjC compilers are always built
-    languages = %w[c c++ objc obj-c++]
+    if build.with? "all-languages"
+      # Everything but Ada, which requires a pre-existing GCC Ada compiler
+      # (gnat) to bootstrap. GCC 4.6.0 adds go as a language option, but it is
+      # currently only compilable on Linux.
+      languages = %w[c c++ objc obj-c++ fortran java jit]
+    else
+      # C, C++, ObjC compilers are always built
+      languages = %w[c c++ objc obj-c++]
 
-    # Everything but Ada, which requires a pre-existing GCC Ada compiler
-    # (gnat) to bootstrap. GCC 4.6.0 add go as a language option, but it is
-    # currently only compilable on Linux.
-    languages << "fortran" if build.with?("fortran") || build.with?("all-languages")
-    languages << "java" if build.with?("java") || build.with?("all-languages")
+      languages << "fortran" if build.with? "fortran"
+      languages << "java" if build.with? "java"
+      languages << "jit" if build.with? "jit"
+    end
 
     args = [
       "--build=#{arch}-apple-darwin#{osmajor}",
       "--prefix=#{prefix}",
+      "--libdir=#{lib}/gcc/#{version_suffix}",
       "--enable-languages=#{languages.join(",")}",
       # Make most executables versioned to avoid conflicts.
       "--program-suffix=-#{version_suffix}",
       "--with-gmp=#{Formula["gmp"].opt_prefix}",
       "--with-mpfr=#{Formula["mpfr"].opt_prefix}",
       "--with-mpc=#{Formula["libmpc"].opt_prefix}",
-      "--with-cloog=#{Formula["cloog"].opt_prefix}",
       "--with-isl=#{Formula["isl"].opt_prefix}",
       "--with-system-zlib",
-      # This ensures lib, libexec, include are sandboxed so that they
-      # don't wander around telling little children there is no Santa
-      # Claus.
-      "--enable-version-specific-runtime-libs",
       "--enable-libstdcxx-time=yes",
       "--enable-stage1-checking",
       "--enable-checking=release",
       "--enable-lto",
-      # A no-op unless --HEAD is built because in head warnings will
-      # raise errors. But still a good idea to include.
+      # Use 'bootstrap-debug' build configuration to force stripping of object
+      # files prior to comparison during bootstrap (broken by Xcode 6.3).
+      "--with-build-config=bootstrap-debug",
       "--disable-werror",
       "--with-pkgversion=Homebrew #{name} #{pkg_version} #{build.used_options*" "}".strip,
-      "--with-bugurl=https://github.com/Homebrew/homebrew/issues",
+      "--with-bugurl=https://github.com/Homebrew/homebrew/issues"
     ]
 
     # "Building GCC with plugin support requires a host that supports
@@ -132,10 +138,16 @@ class Gcc < Formula
       args << "--enable-multilib"
     end
 
+    args << "--enable-host-shared" if build.with?("jit") || build.with?("all-languages")
+
+    # Ensure correct install names when linking against libgcc_s;
+    # see discussion in https://github.com/Homebrew/homebrew/pull/34303
+    inreplace "libgcc/config/t-slibgcc-darwin", "@shlib_slibdir@", "#{HOMEBREW_PREFIX}/lib/gcc/#{version_suffix}"
+
     mkdir "build" do
       unless MacOS::CLT.installed?
         # For Xcode-only systems, we need to tell the sysroot path.
-        # "native-system-header's will be appended
+        # "native-system-headers" will be appended
         args << "--with-native-system-header-dir=/usr/include"
         args << "--with-sysroot=#{MacOS.sdk_path}"
       end
@@ -161,10 +173,10 @@ class Gcc < Formula
     # Rename java properties
     if build.with?("java") || build.with?("all-languages")
       config_files = [
-        "#{lib}/logging.properties",
-        "#{lib}/security/classpath.security",
-        "#{lib}/i386/logging.properties",
-        "#{lib}/i386/security/classpath.security"
+        "#{lib}/gcc/#{version_suffix}/logging.properties",
+        "#{lib}/gcc/#{version_suffix}/security/classpath.security",
+        "#{lib}/gcc/#{version_suffix}/i386/logging.properties",
+        "#{lib}/gcc/#{version_suffix}/i386/security/classpath.security"
       ]
       config_files.each do |file|
         add_suffix file, version_suffix if File.exist? file
@@ -172,7 +184,7 @@ class Gcc < Formula
     end
   end
 
-  def add_suffix file, suffix
+  def add_suffix(file, suffix)
     dir = File.dirname(file)
     ext = File.extname(file)
     base = File.basename(file, ext)
@@ -201,11 +213,11 @@ class Gcc < Formula
     system "#{bin}/gcc-#{version_suffix}", "-o", "hello-c", "hello-c.c"
     assert_equal "Hello, world!\n", `./hello-c`
 
-    (testpath/"hello-cc.cc").write <<-'EOS'.undent
+    (testpath/"hello-cc.cc").write <<-EOS.undent
       #include <iostream>
       int main()
       {
-        std::cout << "Hello, world!\n";
+        std::cout << "Hello, world!" << std::endl;
         return 0;
       }
     EOS
@@ -231,3 +243,37 @@ class Gcc < Formula
     end
   end
 end
+__END__
+diff --git a/gcc/jit/Make-lang.in b/gcc/jit/Make-lang.in
+index 44d0750..4df2a9c 100644
+--- a/gcc/jit/Make-lang.in
++++ b/gcc/jit/Make-lang.in
+@@ -85,8 +85,7 @@ $(LIBGCCJIT_FILENAME): $(jit_OBJS) \
+	     $(jit_OBJS) libbackend.a libcommon-target.a libcommon.a \
+	     $(CPPLIB) $(LIBDECNUMBER) $(LIBS) $(BACKENDLIBS) \
+	     $(EXTRA_GCC_OBJS) \
+-	     -Wl,--version-script=$(srcdir)/jit/libgccjit.map \
+-	     -Wl,-soname,$(LIBGCCJIT_SONAME)
++	     -Wl,-install_name,$(LIBGCCJIT_SONAME)
+
+ $(LIBGCCJIT_SONAME_SYMLINK): $(LIBGCCJIT_FILENAME)
+	ln -sf $(LIBGCCJIT_FILENAME) $(LIBGCCJIT_SONAME_SYMLINK)
+diff --git a/gcc/jit/jit-playback.c b/gcc/jit/jit-playback.c
+index 925fa86..01cfd4b 100644
+--- a/gcc/jit/jit-playback.c
++++ b/gcc/jit/jit-playback.c
+@@ -2416,6 +2416,15 @@ invoke_driver (const char *ctxt_progname,
+      time.  */
+   ADD_ARG ("-fno-use-linker-plugin");
+
++#if defined (DARWIN_X86) || defined (DARWIN_PPC)
++  /* OS X's linker defaults to treating undefined symbols as errors.
++     If the context has any imported functions or globals they will be
++     undefined until the .so is dynamically-linked into the process.
++     Ensure that the driver passes in "-undefined dynamic_lookup" to the
++     linker.  */
++  ADD_ARG ("-Wl,-undefined,dynamic_lookup");
++#endif
++
+   /* pex argv arrays are NULL-terminated.  */
+   argvec.safe_push (NULL);

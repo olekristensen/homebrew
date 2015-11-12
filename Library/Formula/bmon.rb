@@ -1,14 +1,14 @@
-require 'formula'
-
 class Bmon < Formula
-  homepage 'https://github.com/tgraf/bmon'
-  url "https://github.com/tgraf/bmon/releases/download/v3.5/bmon-3.5.tar.gz"
-  sha1 "352f774e20f679e89de0f72159475d999cc7bf2f"
+  desc "Interface bandwidth monitor"
+  homepage "https://github.com/tgraf/bmon"
+  url "https://github.com/tgraf/bmon/releases/download/v3.8/bmon-3.8.tar.gz"
+  sha256 "da3e9f5f82f6e65bf08d912cc1e6ba450e488c543151f4b37791da03373054ff"
 
   bottle do
-    sha1 "403e402182813cc1f63a6b75c2a40db32e328626" => :mavericks
-    sha1 "3a5cd94abd456aa3b49cc375ceb72115a4c3a1ad" => :mountain_lion
-    sha1 "081de28fe55bf0285c6310fffe8d25ce843b769f" => :lion
+    sha256 "7215050b89d4cbf877365c7a66885ca80be97f94b0cace93dc51cc1b29c2108e" => :el_capitan
+    sha256 "576b5d70844675bcf7dfa15df9e7b69065e2c951dbb52e1b156215e8a8ddd93c" => :yosemite
+    sha256 "1f170230b89afb2a9761cb30283a7cfdc18468e6df7e4744fc882d60bb67852d" => :mavericks
+    sha256 "84e9754b63dd5133669d7194ceab9ae36b90f4af5e05f77a9f1ed9e744121802" => :mountain_lion
   end
 
   head do
@@ -25,7 +25,10 @@ class Bmon < Formula
     system "./configure", "--disable-debug",
                           "--prefix=#{prefix}",
                           "--mandir=#{man}"
-    system "make" # two steps to prevent blowing up
-    system "make install"
+    system "make", "install"
+  end
+
+  test do
+    system "#{bin}/bmon", "-o", "ascii:quitafter=1"
   end
 end

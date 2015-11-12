@@ -1,17 +1,15 @@
-require "formula"
-
 class DuoUnix < Formula
+  desc "Two-factor authentication for SSH"
   homepage "https://www.duosecurity.com/docs/duounix"
-  url "https://dl.duosecurity.com/duo_unix-1.9.13.tar.gz"
-  sha1 "96120910cbaa75c3a59e4c12006738b267c3e9f0"
+  url "https://dl.duosecurity.com/duo_unix-1.9.17.tar.gz"
+  sha256 "d841fb7cf48013d25c2abe882aa1888f230b8414b71ef5898ca988d000b5953a"
+
   bottle do
     cellar :any
-    sha1 "23ef6a81af2f37166d7d7423b88f7716bf9b0629" => :yosemite
-    sha1 "fdc919d750012fbfeeec8b3f95d07000adc3c946" => :mavericks
-    sha1 "0d08b3ca611f47a25a922b2d942f157f1d6268c1" => :mountain_lion
+    sha256 "49ce5dcbf9d025796dfe9cd5d7c1b8123c4418cdafab8bb3b910c5218b939e4f" => :el_capitan
+    sha256 "055e5643825f5b581a6f57eb5f8a1b7cfcbf450f0e19201cf82a68c5545bfb04" => :yosemite
+    sha256 "acbe2c050efc8127721e50879d00b56aa0ff2050f22facced4803d3671df11e7" => :mavericks
   end
-
-  revision 1
 
   depends_on "openssl"
 
@@ -21,11 +19,13 @@ class DuoUnix < Formula
                           "--prefix=#{prefix}",
                           "--sysconfdir=#{etc}",
                           "--includedir=#{include}/duo",
-                          "--with-openssl=#{Formula["openssl"].opt_prefix}"
+                          "--with-openssl=#{Formula["openssl"].opt_prefix}",
+                          "--with-pam=#{lib}/pam/"
     system "make", "install"
   end
 
   test do
-    system "#{sbin}/login_duo", "-d", "-c", "#{etc}/login_duo.conf", "-f", "foobar", "echo", "SUCCESS"
+    system "#{sbin}/login_duo", "-d", "-c", "#{etc}/login_duo.conf",
+                                "-f", "foobar", "echo", "SUCCESS"
   end
 end

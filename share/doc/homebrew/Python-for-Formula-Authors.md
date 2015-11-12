@@ -8,17 +8,17 @@ Python libraries exist to be imported from other Python modules; they are often 
 
 Bindings are a special case of libraries that allow Python code to interact with a library or application implemented in another language.
 
-Homebrew is happy to accept applications that are built in Python, whether the apps are available from PyPI or not. Homebrew generally won't accept libraries that can be installed correctly with `pip install foo`. Libraries that can be pip-installed but have several Homebrew dependencies may be appropriate for the [homebrew-python tap](https://github.com/Homebrew/homebrew-python). Bindings may be installed for packages that provide them, especially if equivalent functionality isn't available through pip.
+Homebrew is happy to accept applications that are built in Python, whether the apps are available from PyPI or not. Homebrew generally won't accept libraries that can be installed correctly with `pip install foo`. Libraries that can be pip-installed but have several Homebrew dependencies may be appropriate for the [homebrew/python](https://github.com/Homebrew/homebrew-python) tap. Bindings may be installed for packages that provide them, especially if equivalent functionality isn't available through pip.
 
 # Running setup.py
 
-Homebrew provides a helper method, `Language::Python.setup_install`, for invoking `setup.py`. Please use it instead of invoking `setup.py` directly. The syntax is:
+Homebrew provides a helper method, `Language::Python.setup_install_args`, which returns arguments for invoking setup.py. Please use it instead of invoking `setup.py` explicitly. The syntax is:
 
 ```ruby
-Language::Python.setup_install python, prefix, *args
+system "python", *Language::Python.setup_install_args(prefix)
 ```
 
-where `python` is either `"python"` or `"python3"`, `prefix` is the destination prefix (usually `libexec` or `prefix`), and `*args` is one or more additional arguments to be passed to `setup.py` after `install`.
+where `prefix` is the destination prefix (usually `libexec` or `prefix`).
 
 # Python module dependencies
 
@@ -58,11 +58,11 @@ Applications should be installed to `libexec`. This prevents the app's Python mo
 
 In your formula's `install` method, first set the `PYTHONPATH` environment variable to your package's libexec site-packages directory with:
 ```ruby
-ENV.prepend_path "PYTHONPATH", libexec/"lib/python2.7/site-packages"
+ENV.prepend_create_path "PYTHONPATH", libexec/"lib/python2.7/site-packages"
 ```
-Then, use `Language::Python.setup_install` to invoke `setup.py` like:
+Then, use `system` with `Language::Python.setup_install_args` to invoke `setup.py` like:
 ```ruby
-Language::Python.setup_install "python", libexec
+system "python", *Language::Python.setup_install_args(libexec)
 ```
 
 This will have placed the scripts your Python package installs in `libexec/"bin"`, which is not symlinked into Homebrew's prefix. We need to make sure these are installed and we also need to make sure that, when they are invoked, `PYTHONPATH` includes the path where we just installed your package. Do this with:
@@ -77,15 +77,17 @@ The first line copies all of the executables to bin. The second line writes stub
 
 All Python dependencies of applications that are not packaged by Homebrew (and those dependencies' Python dependencies, recursively) **should** be unconditionally downloaded as `Resource`s and installed into the application keg's `libexec/"vendor"` path. This prevents the state of the system Python packages from being affected by installing an app with Homebrew and guarantees that apps use versions of their dependencies that are known to work together. `libexec/"vendor"` is preferred to `libexec` so that formulæ don't accidentally install executables belonging to their dependencies, which can cause linking conflicts.
 
-Each dependency **should** be explicitly installed; please do not rely on setup.py or pip to perform automatic dependency resolution, for the [reasons described here](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/Acceptable-Formulae.md#we-dont-like-install-scripts-that-download-things). This [mkpydeps script](https://github.com/tdsmith/labmisc/blob/master/mkpydeps) may help you generate resource stanzas; to use it, `pip install tl.eggdeps`, install your package with e.g. `pip install foo`, and run `mkpydeps foo` to generate resource stanzas for each of your package's (recursive) dependencies. The resource stanzas are not printed in any useful order. Consult `eggdeps foo` to view your module's dependency graph to decide how to order the resources; the most deeply indented packages should be listed first.
+Each dependency **should** be explicitly installed; please do not rely on setup.py or pip to perform automatic dependency resolution, for the [reasons described here](Acceptable-Formulae.md#we-dont-like-install-scripts-that-download-things).
+
+You can use [homebrew-pypi-poet](https://pypi.python.org/pypi/homebrew-pypi-poet) to help you write resource stanzas. To use it, set up a virtualenv and install your package and all its dependencies. Then, `pip install homebrew-pypi-poet` into the same virtualenv. `poet -f foo` will draft a complete formula for you, or `poet foo` will just generate the resource stanzas.
 
 Set `PYTHONPATH` to include the `libexec/"vendor"` site-packages path with:
 ```ruby
-ENV.prepend_path "PYTHONPATH", libexec/"vendor/lib/python2.7/site-packages"
+ENV.prepend_create_path "PYTHONPATH", libexec/"vendor/lib/python2.7/site-packages"
 ```
 before staging and installing each resourced dependency with:
 ```ruby
-Language::Python.setup_install "python", libexec/"vendor"
+system "python", *Language::Python.setup_install_args(libexec/"vendor")
 ```
 
 ## Example
@@ -97,23 +99,25 @@ class Foo < Formula
   url ...
 
   resource "six" do
-    url "https://pypi.python.org/packages/source/s/six/six-1.8.0.tar.gz"
-    sha1 "aa3b0659cbc85c6c7a91efc51f2d1007040070cd"
+    url "https://pypi.python.org/packages/source/s/six/six-1.9.0.tar.gz"
+    sha256 "e24052411fc4fbd1f672635537c3fc2330d9481b18c0317695b46259512c91d5"
   end
 
-   resource "parsedatetime" do
+  resource "parsedatetime" do
     url "https://pypi.python.org/packages/source/p/parsedatetime/parsedatetime-1.4.tar.gz"
-    sha1 "4b9189d38f819cc8144f30d91779716a696d97f8"
+    sha256 "09bfcd8f3c239c75e77b3ff05d782ab2c1aed0892f250ce2adf948d4308fe9dc"
   end
 
   def install
-    ENV.prepend_path "PYTHONPATH", libexec/"vendor/lib/python2.7/site-packages"
+    ENV.prepend_create_path "PYTHONPATH", libexec/"vendor/lib/python2.7/site-packages"
     %w[six parsedatetime].each do |r|
-      resource(r).stage { Language::Python.setup_install "python", libexec/"vendor" }
+      resource(r).stage do
+        system "python", *Language::Python.setup_install_args(libexec/"vendor")
+      end
     end
 
-    ENV.prepend_path "PYTHONPATH", libexec/"lib/python2.7/site-packages"
-    Language::Python.setup_install "python", libexec
+    ENV.prepend_create_path "PYTHONPATH", libexec/"lib/python2.7/site-packages"
+    system "python", *Language::Python.setup_install_args(libexec)
 
     bin.install Dir[libexec/"bin/*"]
     bin.env_script_all_files(libexec/"bin", :PYTHONPATH => ENV["PYTHONPATH"])
@@ -136,7 +140,7 @@ Bindings should follow the same advice for Python module dependencies as librari
 If the bindings are installed by invoking a `setup.py`, do something like:
 ```ruby
 cd "source/python" do
-  Language::Python.setup_install "python", prefix
+  system "python", *Language::Python.setup_install_args(prefix)
 end
 ```
 
@@ -146,7 +150,7 @@ If the `configure` and `make` scripts do not want to install into the Cellar, so
 
 1. Call `./configure --without-python` (or a similar named option)
 1. `cd` into the directory containing the Python bindings
-1. Call `setup.py` with `Language::Python.setup_install` (as described above)
+1. Call `setup.py` with `system` and `Language::Python.setup_install_args` (as described above)
 
 Sometimes we have to `inreplace` a `Makefile` to use our prefix for the python bindings. (`inreplace` is one of Homebrew's helper methods, which greps and edits text files on-the-fly.)
 
@@ -186,7 +190,7 @@ Distribute (not to be confused with distutils) is an obsolete fork of setuptools
 
 ## What is `--single-version-externally-managed`?
 
-`--single-version-externally-managed` ("SVEM") is a setuptools-only [argument to setup.py install](http://pythonhosted.org/setuptools/setuptools.html#install-run-easy-install-or-old-style-installation). The primary effect of SVEM is to use distutils to perform the install instead of using setuptools' `easy_install`.
+`--single-version-externally-managed` ("SVEM") is a setuptools-only [argument to setup.py install](https://pythonhosted.org/setuptools/setuptools.html#install-run-easy-install-or-old-style-installation). The primary effect of SVEM is to use distutils to perform the install instead of using setuptools' `easy_install`.
 
 `easy_install` does a few things that we need to avoid:
 
@@ -196,7 +200,7 @@ Distribute (not to be confused with distutils) is an obsolete fork of setuptools
 
 setuptools requires that SVEM is used in conjunction with `--record`, which provides a list of files that can later be used to uninstall the package. We don't need or want this because Homebrew can manage uninstallation but since setuptools demands it we comply. The Homebrew convention is to call the record file "installed.txt".
 
-Detecting whether a `setup.py` uses `setup()` from setuptools or distutils is difficult, but we always need to pass this flag to setuptools-based scripts. `pip` faces the same problem that we do and forces `setup()` to use the setuptools version by loading a shim around `setup.py` that imports setuptools before doing anything else. Since setuptools monkey-patches distutils and replaces its `setup` function, this provides a single, consistent interface. We have borrowed this code and use it in `Language::Python.setup_install`.
+Detecting whether a `setup.py` uses `setup()` from setuptools or distutils is difficult, but we always need to pass this flag to setuptools-based scripts. `pip` faces the same problem that we do and forces `setup()` to use the setuptools version by loading a shim around `setup.py` that imports setuptools before doing anything else. Since setuptools monkey-patches distutils and replaces its `setup` function, this provides a single, consistent interface. We have borrowed this code and use it in `Language::Python.setup_install_args`.
 
 
 ## `--prefix` vs `--root`

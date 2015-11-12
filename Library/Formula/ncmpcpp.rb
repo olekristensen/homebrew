@@ -1,28 +1,37 @@
-require 'formula'
-
 class Ncmpcpp < Formula
-  homepage 'http://ncmpcpp.rybczak.net/'
-  url 'http://ncmpcpp.rybczak.net/stable/ncmpcpp-0.6.tar.bz2'
-  sha1 '7bbd63c6f17aa8cdf1190b19e2dc893df188da1c'
+  desc "Ncurses-based client for the Music Player Daemon"
+  homepage "http://rybczak.net/ncmpcpp/"
+  url "http://rybczak.net/ncmpcpp/stable/ncmpcpp-0.6.7.tar.bz2"
+  sha256 "08807dc515b4e093154a6e91cdd17ba64ebedcfcd7aa34d0d6eb4d4cc28a217b"
+  revision 1
 
   bottle do
     cellar :any
-    sha1 "57802cfa62bbc99594b534068e987f7fcd9e1fbb" => :yosemite
-    sha1 "a39ff22a16fd90180e3d411d533738c8f640f844" => :mavericks
-    sha1 "255cd14d8f3470446be1b11843de8ec331f3823e" => :mountain_lion
+    sha256 "f3a1dff9e1e053f22799c7ecdea3997f7adabf923c9b91dde9d1f29d30720bef" => :el_capitan
+    sha256 "e7597bdcc79ec3dcde075f60ebcb958e95abf09c6bc6c3fd49b539e2ad59525d" => :yosemite
+    sha256 "c781cec0064aab5a050a314b1a67f5980f3879955ef3d32fbda1b0ee58676111" => :mavericks
   end
 
   head do
-    url 'git://repo.or.cz/ncmpcpp.git'
+    url "git://repo.or.cz/ncmpcpp.git"
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
     depends_on "libtool" => :build
   end
 
-  depends_on 'pkg-config' => :build
-  depends_on 'libmpdclient'
-  depends_on 'readline'
+  deprecated_option "outputs" => "with-outputs"
+  deprecated_option "visualizer" => "with-visualizer"
+  deprecated_option "clock" => "with-clock"
+
+  option "with-outputs", "Compile with mpd outputs control"
+  option "with-visualizer", "Compile with built-in visualizer"
+  option "with-clock", "Compile with optional clock tab"
+
+  depends_on "pkg-config" => :build
+  depends_on "libmpdclient"
+  depends_on "readline"
+  depends_on "fftw" if build.with? "visualizer"
 
   if MacOS.version < :mavericks
     depends_on "boost" => "c++11"
@@ -32,25 +41,23 @@ class Ncmpcpp < Formula
     depends_on "taglib"
   end
 
-  depends_on 'fftw' if build.include? "visualizer"
-
-  option 'outputs', 'Compile with mpd outputs control'
-  option 'visualizer', 'Compile with built-in visualizer'
-  option 'clock', 'Compile with optional clock tab'
-
   needs :cxx11
 
   def install
     ENV.cxx11
-    ENV.append 'LDFLAGS', '-liconv'
-    args = ["--disable-dependency-tracking",
-            "--prefix=#{prefix}",
-            "--with-taglib",
-            "--with-curl",
-            "--enable-unicode"]
-    args << '--enable-outputs' if build.include? 'outputs'
-    args << '--enable-visualizer' if build.include? 'visualizer'
-    args << '--enable-clock' if build.include? 'clock'
+    ENV.append "LDFLAGS", "-liconv"
+
+    args = [
+      "--disable-dependency-tracking",
+      "--prefix=#{prefix}",
+      "--with-taglib",
+      "--with-curl",
+      "--enable-unicode",
+    ]
+
+    args << "--enable-outputs" if build.with? "outputs"
+    args << "--enable-visualizer" if build.with? "visualizer"
+    args << "--enable-clock" if build.with? "clock"
 
     if build.head?
       # Also runs configure
@@ -58,6 +65,10 @@ class Ncmpcpp < Formula
     else
       system "./configure", *args
     end
-    system "make install"
+    system "make", "install"
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/ncmpcpp --version")
   end
 end

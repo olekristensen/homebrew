@@ -1,9 +1,8 @@
-require "formula"
-
 class Eet < Formula
-  homepage "http://trac.enlightenment.org/e/wiki/Eet"
-  url "http://download.enlightenment.org/releases/eet-1.7.10.tar.gz"
-  sha1 "7cf6938cc76fbf1cd8e2721606d61c93c09edd9e"
+  desc "Library for writing arbitrary chunks of data to a file using compression"
+  homepage "https://docs.enlightenment.org/auto/eet/eet_main.html"
+  url "https://download.enlightenment.org/releases/eet-1.7.10.tar.gz"
+  sha256 "c424821eb8ba09884d3011207b1ecec826bc45a36969cd4978b78f298daae1ee"
 
   bottle do
     cellar :any
@@ -13,7 +12,7 @@ class Eet < Formula
   end
 
   head do
-    url "http://svn.enlightenment.org/svn/e/trunk/eet/"
+    url "https://git.enlightenment.org/legacy/eet.git/"
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
@@ -25,6 +24,8 @@ class Eet < Formula
   depends_on "jpeg"
   depends_on "lzlib"
   depends_on "openssl"
+
+  conflicts_with "efl", :because => "both install `eet` binaries"
 
   def install
     system "./autogen.sh" if build.head?

@@ -1,17 +1,18 @@
-require "formula"
-
 class Davix < Formula
-  homepage "http://dmc.web.cern.ch/projects/davix/home"
-  url "https://git.cern.ch/pub/davix.git", :tag => "R_0_3_6-2"
-  version "0.3.6-2"
+  desc "Library and tools for advanced file I/O with HTTP-based protocols"
+  homepage "https://dmc.web.cern.ch/projects/davix/home"
+  url "https://github.com/cern-it-sdc-id/davix.git",
+    :revision => "c53eb1472537da1694a5adc4c8fef5611eae7ab8",
+    :tag => "R_0_5_0"
+  version "0.5.0"
 
-  head "https://git.cern.ch/pub/davix.git"
+  head "https://github.com/cern-it-sdc-id/davix.git"
 
   bottle do
     cellar :any
-    sha1 "5cfd3f49de7034c40ec309a5a17514caf46e9e8e" => :yosemite
-    sha1 "525f241213630dfeaa3ec9d5ea019c8a0670b4dc" => :mavericks
-    sha1 "21befa078d3cdea7369e037999a9e5be24f3157d" => :mountain_lion
+    sha256 "4bab71124c9638ab089f1784dd01805d814ee81e037fc6f8d7ddfd70a2ab785a" => :yosemite
+    sha256 "8cdd2495b9286226b7be91e111a72f3d6d565b0245d5741f53901eb44266be3f" => :mavericks
+    sha256 "00709d9ef997292d7154e92903c5375d5c9d572d6581814f1bd843b5319a76ab" => :mountain_lion
   end
 
   depends_on "cmake" => :build

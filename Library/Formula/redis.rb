@@ -1,32 +1,36 @@
-require 'formula'
-
 class Redis < Formula
-  homepage 'http://redis.io/'
-  url "http://download.redis.io/releases/redis-2.8.17.tar.gz"
-  sha1 "913479f9d2a283bfaadd1444e17e7bab560e5d1e"
+  desc "Persistent key-value database, with built-in net interface"
+  homepage "http://redis.io/"
+  url "http://download.redis.io/releases/redis-3.0.5.tar.gz"
+  sha256 "4c176826eee909fbdc63db1c15adc22aab42d758043829e556f4331e6a5bd480"
 
   bottle do
-    sha1 "749cb76075887dae929b91b4a14fd376e4c2c1c5" => :mavericks
-    sha1 "601257c4bc1b39bfb450e6dc6f113fa9a73fb8f8" => :mountain_lion
-    sha1 "3716fd757f9911610f9d24cb51ecd9a52d71228c" => :lion
+    cellar :any_skip_relocation
+    sha256 "8595573ce79c47a893458ef8edc7e1cea851e86f46bd3b3c8c02884bd04c74ef" => :el_capitan
+    sha256 "a3d223d04faaa36fc518c647a67e7ddd3f69c61ce475fbdb21385e0a42301ee2" => :yosemite
+    sha256 "f6a87a3679ef660cd129bbc337434a190b9c75411006701737eeb0ede80ac6c0" => :mavericks
   end
 
-  head 'https://github.com/antirez/redis.git', :branch => 'unstable'
+  option "with-jemalloc", "Select jemalloc as memory allocator when building Redis"
+
+  head "https://github.com/antirez/redis.git", :branch => "unstable"
 
   fails_with :llvm do
     build 2334
-    cause 'Fails with "reference out of range from _linenoise"'
+    cause "Fails with \"reference out of range from _linenoise\""
   end
 
   def install
     # Architecture isn't detected correctly on 32bit Snow Leopard without help
     ENV["OBJARCH"] = "-arch #{MacOS.preferred_arch}"
 
-    # Head and stable have different code layouts
-    src = (buildpath/'src/Makefile').exist? ? buildpath/'src' : buildpath
-    system "make", "-C", src, "CC=#{ENV.cc}"
+    args = %W[
+      PREFIX=#{prefix}
+      CC=#{ENV.cc}
+    ]
+    args << "MALLOC=jemalloc" if build.with? "jemalloc"
+    system "make", "install", *args
 
-    %w[benchmark cli server check-dump check-aof sentinel].each { |p| bin.install src/"redis-#{p}" }
     %w[run db/redis log].each { |p| (var+p).mkpath }
 
     # Fix up default conf file to match our paths
@@ -36,8 +40,8 @@ class Redis < Formula
       s.gsub! "\# bind 127.0.0.1", "bind 127.0.0.1"
     end
 
-    etc.install 'redis.conf'
-    etc.install 'sentinel.conf' => 'redis-sentinel.conf'
+    etc.install "redis.conf"
+    etc.install "sentinel.conf" => "redis-sentinel.conf"
   end
 
   plist_options :manual => "redis-server #{HOMEBREW_PREFIX}/etc/redis.conf"

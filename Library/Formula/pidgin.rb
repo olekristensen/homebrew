@@ -1,43 +1,46 @@
-require "formula"
-
 class Pidgin < Formula
+  desc "Multi-protocol chat client"
   homepage "https://pidgin.im/"
-  url "https://downloads.sourceforge.net/project/pidgin/Pidgin/2.10.10/pidgin-2.10.10.tar.bz2"
-  sha1 "81267c35c8d27f2c62320b564fc11af2cc1f3a4a"
+  url "https://downloads.sourceforge.net/project/pidgin/Pidgin/2.10.11/pidgin-2.10.11.tar.bz2"
+  sha256 "f2ae211341fc77efb9945d40e9932aa535cdf3a6c8993fe7919fca8cc1c04007"
+  revision 1
 
   bottle do
-    revision 2
-    sha1 "62b0b06637fabb960543e61e4652ee09dfbc1d8f" => :yosemite
-    sha1 "7e20e7691b7ebd105e512c4bfb251a9f71c0d21b" => :mavericks
-    sha1 "8c03819ed1317164cc29b5de882604a7a017a89f" => :mountain_lion
+    revision 5
+    sha256 "854c81ff4f98653156fecb49b0d8736def6c3507da9ab47982c540f1913cb418" => :el_capitan
+    sha256 "67e7892b128e2b5589cd7649c74bb449aa54adf133789ff1a0a3bd9f3c52ec57" => :yosemite
+    sha256 "8d6452281c705226b987d79ae1642a256ec010a47a613d2674c0750215efe528" => :mavericks
+    sha256 "b7daac4be432e5420d690750c8403486edbcb3ba173f4165c32f2aa79b85859f" => :mountain_lion
   end
 
-  depends_on :x11 => :optional
+  option "with-perl", "Build Pidgin with Perl support"
+  option "without-gui", "Build only Finch, the command-line client"
+
+  deprecated_option "perl" => "with-perl"
+  deprecated_option "without-GUI" => "without-gui"
+
   depends_on "pkg-config" => :build
   depends_on "intltool" => :build
   depends_on "gettext"
-  depends_on "gtk+"
   depends_on "gsasl" => :optional
   depends_on "gnutls"
   depends_on "libgcrypt"
-  depends_on "libotr"
+  depends_on "libidn"
+  depends_on "glib"
 
-  if build.without? "GUI"
-    depends_on "glib"
-    depends_on "libidn"
+  if build.with? "gui"
+    depends_on "gtk+"
+    depends_on "cairo"
+    depends_on "pango"
+    depends_on "libotr"
   end
 
   # Finch has an equal port called purple-otr but it is a NIGHTMARE to compile
   # If you want to fix this and create a PR on Homebrew please do so.
   resource "pidgin-otr" do
     url "https://otr.cypherpunks.ca/pidgin-otr-4.0.1.tar.gz"
-    sha1 "e231a2dc72c960f2aa70d8c9d4b05abc6d123085"
+    sha256 "1b781f48c27bcc9de3136c0674810df23f7d6b44c727dbf4dfb24067909bf30a"
   end
-
-  deprecated_option "perl" => "with-perl"
-
-  option "with-perl", "Build Pidgin with Perl support"
-  option "without-GUI", "Build Finch instead of Pidgin"
 
   def install
     args = %W[
@@ -52,28 +55,26 @@ class Pidgin < Formula
       --disable-gstreamer
       --disable-gstreamer-interfaces
       --disable-gtkspell
-      --disable-idn
       --disable-meanwhile
       --disable-vv
+      --without-x
     ]
 
-    args << "--with-x" if build.with? "GUI"
     args << "--disable-perl" if build.without? "perl"
     args << "--enable-cyrus-sasl" if build.with? "gsasl"
 
-    if build.without? "GUI"
-      args << "--with-tclconfig=#{MacOS.sdk_path}/usr/lib"
-      args << "--with-tkconfig=#{MacOS.sdk_path}/usr/lib"
-      args << "--without-x"
+    args << "--with-tclconfig=#{MacOS.sdk_path}/usr/lib"
+    args << "--with-tkconfig=#{MacOS.sdk_path}/usr/lib"
+    if build.without? "gui"
       args << "--disable-gtkui"
     end
 
     system "./configure", *args
     system "make", "install"
 
-    if build.with? "GUI"
+    if build.with? "gui"
       resource("pidgin-otr").stage do
-        ENV.prepend "CFLAGS", "-I#{HOMEBREW_PREFIX}/opt/libotr/include/libotr"
+        ENV.prepend "CFLAGS", "-I#{Formula["libotr"].opt_include}"
         ENV.append_path "PKG_CONFIG_PATH", "#{lib}/pkgconfig"
         system "./configure", "--prefix=#{prefix}", "--mandir=#{man}"
         system "make", "install"

@@ -1,34 +1,30 @@
-require 'formula'
-
 class Tomcat < Formula
-  homepage "http://tomcat.apache.org/"
-  url "http://www.apache.org/dyn/closer.cgi?path=tomcat/tomcat-8/v8.0.15/bin/apache-tomcat-8.0.15.tar.gz"
-  sha1 "e9b6c04f3d337a7a1e50acd175295b8c30e9d3b2"
+  desc "Implementation of Java Servlet and JavaServer Pages"
+  homepage "https://tomcat.apache.org/"
+  url "https://www.apache.org/dyn/closer.cgi?path=tomcat/tomcat-8/v8.0.28/bin/apache-tomcat-8.0.28.tar.gz"
+  mirror "https://archive.apache.org/dist/tomcat/tomcat-8/v8.0.28/bin/apache-tomcat-8.0.28.tar.gz"
+  sha256 "a7a6c092b79fc5a8cffe5916d0e5554254eddcb3c1911ed90696c153b4f13d10"
 
-  bottle do
-    cellar :any
-    sha1 "afcce9cce701aa992521e912a64820c5cf281d76" => :yosemite
-    sha1 "31ac8950914cd7cb17d51979d2e51c10e5071443" => :mavericks
-    sha1 "f4f9f3a45f15ff71e8f7a8c5468227cfc374f158" => :mountain_lion
-  end
+  bottle :unneeded
 
   option "with-fulldocs", "Install full documentation locally"
 
   resource "fulldocs" do
-    url "http://www.apache.org/dyn/closer.cgi?path=/tomcat/tomcat-8/v8.0.15/bin/apache-tomcat-8.0.15-fulldocs.tar.gz"
-    version "8.0.15"
-    sha1 "c010691b690f23b3320702f7a9b2fde51d885a44"
+    url "https://www.apache.org/dyn/closer.cgi?path=/tomcat/tomcat-8/v8.0.28/bin/apache-tomcat-8.0.28-fulldocs.tar.gz"
+    mirror "https://archive.apache.org/dist/tomcat/tomcat-8/v8.0.28/bin/apache-tomcat-8.0.28-fulldocs.tar.gz"
+    version "8.0.28"
+    sha256 "be503ea13eac5ca06bd028d1f768c5c935b060ac0a320cd9788408f2f2faa61f"
   end
 
   def install
     # Remove Windows scripts
-    rm_rf Dir['bin/*.bat']
+    rm_rf Dir["bin/*.bat"]
 
     # Install files
-    prefix.install %w{ NOTICE LICENSE RELEASE-NOTES RUNNING.txt }
-    libexec.install Dir['*']
+    prefix.install %w[ NOTICE LICENSE RELEASE-NOTES RUNNING.txt ]
+    libexec.install Dir["*"]
     bin.install_symlink "#{libexec}/bin/catalina.sh" => "catalina"
 
-    (share/'fulldocs').install resource('fulldocs') if build.with? 'fulldocs'
+    (share/"fulldocs").install resource("fulldocs") if build.with? "fulldocs"
   end
 end

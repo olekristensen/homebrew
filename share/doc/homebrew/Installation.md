@@ -3,7 +3,7 @@ The suggested and easiest way to install Homebrew is on the
 [homepage](http://brew.sh).
 
 The standard script installs Homebrew to `/usr/local` so that
-[you don’t need sudo](FAQ.md#wiki-sudo) when you `brew install`. It is a
+[you don’t need sudo](FAQ.md#why-does-homebrew-say-sudo-is-bad-) when you `brew install`. It is a
 careful script, it can be run even if you have stuff installed to
 `/usr/local` already. It tells you exactly what it will do before it
 does it too. And you have to confirm everything it will do before it
@@ -17,7 +17,7 @@ flexibility. They are listed below the requirements.
 * OS X 10.6 or higher <sup>[2](#2)</sup>
 * Command Line Tools for Xcode: `xcode-select --install`,
   https://developer.apple.com/downloads or
-  [Xcode](http://itunes.apple.com/us/app/xcode/id497799835) <sup>[3](#3)</sup>
+  [Xcode](https://itunes.apple.com/us/app/xcode/id497799835) <sup>[3](#3)</sup>
 * A Bourne-compatible shell for installation (e.g. bash or zsh) <sup>[4](#4)</sup>
 
 If you want to build software that utilizes X11 components, you’ll need

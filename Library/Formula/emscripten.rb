@@ -1,14 +1,26 @@
-require "formula"
-
 class Emscripten < Formula
+  desc "LLVM bytecode to JavaScript compiler"
   homepage "https://kripken.github.io/emscripten-site/"
-  url "https://github.com/kripken/emscripten/archive/1.27.0.tar.gz"
-  sha1 "82feb97e78b87a159c7382b772f62fe5ba2bd0e2"
+
+  stable do
+    url "https://github.com/kripken/emscripten/archive/1.35.2.tar.gz"
+    sha256 "56feaa3037ec72e2d5299b0a92d7e3b9e1da164db32338c1fe02fe3ca68d8adb"
+
+    resource "fastcomp" do
+      url "https://github.com/kripken/emscripten-fastcomp/archive/1.35.2.tar.gz"
+      sha256 "3bbc7990138381b0cbdac39f83afee76fa143efe81dba4939c1f514dccc307a3"
+    end
+
+    resource "fastcomp-clang" do
+      url "https://github.com/kripken/emscripten-fastcomp-clang/archive/1.35.2.tar.gz"
+      sha256 "5f7090fe66b9462e172cb7a889d9044aa301ffc946072293dd2b269973f358ce"
+    end
+  end
 
   bottle do
-    sha1 "5d981b548c225cd4d8efc6bcc06ddd635483af28" => :yosemite
-    sha1 "ff71534e13b36cafd5d3fa89a7cb32a4ce6abed8" => :mavericks
-    sha1 "4e8831fe22a636971d59d7968c2fce704928244f" => :mountain_lion
+    sha256 "198eb3d39472c8807b9a86e5e7c433262562f2315c212181a54f6b6e8ca7aaf0" => :el_capitan
+    sha256 "01b436990a411cff5c3b874eaa48bbd6aa078c6ed8b5db072650d0b2a0d4587e" => :yosemite
+    sha256 "53c3c5f2965e1e6e48b64e2c54fbb745f5abd08116991556f02a776449a9fbb8" => :mavericks
   end
 
   head do
@@ -23,17 +35,7 @@ class Emscripten < Formula
     end
   end
 
-  stable do
-    resource "fastcomp" do
-      url "https://github.com/kripken/emscripten-fastcomp/archive/1.27.0.tar.gz"
-      sha1 "77343ed1206a6407bcaafb901f699d4c5d2c3c83"
-    end
-
-    resource "fastcomp-clang" do
-      url "https://github.com/kripken/emscripten-fastcomp-clang/archive/1.27.0.tar.gz"
-      sha1 "53a4ee4482e79117fdd6979f6e2d80d18e2c9dca"
-    end
-  end
+  needs :cxx11
 
   depends_on :python if MacOS.version <= :snow_leopard
   depends_on "node"
@@ -41,10 +43,11 @@ class Emscripten < Formula
   depends_on "yuicompressor"
 
   def install
+    ENV.cxx11
     # OSX doesn't provide a "python2" binary so use "python" instead.
     python2_shebangs = `grep --recursive --files-with-matches ^#!/usr/bin/.*python2$ #{buildpath}`
     python2_shebang_files = python2_shebangs.lines.sort.uniq
-    python2_shebang_files.map! {|f| Pathname(f.chomp)}
+    python2_shebang_files.map! { |f| Pathname(f.chomp) }
     python2_shebang_files.reject! &:symlink?
     inreplace python2_shebang_files, %r{^(#!/usr/bin/.*python)2$}, "\\1"
 
@@ -64,24 +67,16 @@ class Emscripten < Formula
       "--disable-bindings",
     ]
 
-    cd "fastcomp" do
-      # Fix for parsing Mac OS X version numbers >= 10.10
-      # https://groups.google.com/forum/#!msg/emscripten-discuss/8gb88R5eyqs/p9_82Wi2pSAJ
-      inreplace "Makefile.rules", '10.([0-9])', '10.([0-9]+)'
-      inreplace "Makefile.rules", '(10.[0-9])', '(10.[0-9]+)'
-      system "./configure", *args
+    mkdir "fastcomp/build" do
+      system "../configure", *args
       system "make"
       system "make", "install"
     end
 
-    %w(em++ em-config emar emcc emcmake emconfigure emlink.py emmake
-       emranlib emrun emscons).each do |emscript|
+    %w[em++ em-config emar emcc emcmake emconfigure emlink.py emmake
+       emranlib emrun emscons].each do |emscript|
       bin.install_symlink libexec/emscript
     end
-  end
-
-  test do
-    system "#{libexec}/llvm/bin/llvm-config", "--version"
   end
 
   def caveats; <<-EOS.undent
@@ -89,5 +84,9 @@ class Emscripten < Formula
       #{opt_libexec}/llvm/bin
     in ~/.emscripten after running `emcc` for the first time.
     EOS
+  end
+
+  test do
+    system "#{libexec}/llvm/bin/llvm-config", "--version"
   end
 end

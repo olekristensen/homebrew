@@ -1,65 +1,85 @@
-require "formula"
-
 class Libressl < Formula
+  desc "Version of the SSL/TLS protocol forked from OpenSSL"
   homepage "http://www.libressl.org/"
-  url "http://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.1.1.tar.gz"
-  mirror "https://raw.githubusercontent.com/DomT4/LibreMirror/master/LibreSSL/libressl-2.1.1.tar.gz"
-  sha256 "fb5ada41a75b31c8dd9ff013daca57b253047ad14e43f65d8b41879b7b8e3c17"
+  url "http://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.3.1.tar.gz"
+  sha256 "410b58db4ebbcab43c3357612e591094f64fb9339269caa2e68728e36f8d589e"
 
   bottle do
-    revision 2
-    sha1 "a98059642ac02c864875c002a78a7dbae0fc783a" => :yosemite
-    sha1 "f24b31201a7d85ae8b8b722e19224205daeda6c1" => :mavericks
-    sha1 "c26900c1475e0c840c7a11801a01098dd0ce65be" => :mountain_lion
+    sha256 "90888d5260e513959b37d277f9bdc26b8905dd9461ba3adec42c5f766cb26a1b" => :el_capitan
+    sha256 "ae2b74d0aec28cdeb2aefb2455f5ac5f0083554a835830d563665fa6c5ab6713" => :yosemite
+    sha256 "a803688c1c8fb3ce0a9eeb98e8be99c44f1b97b5244cd6b8dcbc1b86ac9f983e" => :mavericks
   end
 
   head do
     url "https://github.com/libressl-portable/portable.git"
+
     depends_on "automake" => :build
     depends_on "autoconf" => :build
     depends_on "libtool" => :build
   end
 
-  keg_only "LibreSSL is not linked to prevent conflicts with the system OpenSSL."
+  keg_only "LibreSSL is not linked to prevent conflict with the system OpenSSL."
 
   def install
+    args = %W[
+      --disable-dependency-tracking
+      --disable-silent-rules
+      --prefix=#{prefix}
+      --with-openssldir=#{etc}/libressl
+      --sysconfdir=#{etc}/libressl
+    ]
+
     system "./autogen.sh" if build.head?
-
-    system "./configure", "--disable-dependency-tracking",
-                          "--disable-silent-rules",
-                          "--prefix=#{prefix}",
-                          "--with-openssldir=#{etc}/libressl",
-                          "--sysconfdir=#{etc}/libressl",
-                          "--with-enginesdir=#{lib}/engines"
-
+    system "./configure", *args
     system "make"
     system "make", "check"
     system "make", "install"
-
-    mkdir_p "#{etc}/libressl"
-    touch "#{etc}/libressl/openssl.cnf"
   end
 
   def post_install
-    if (etc/"openssl/cert.pem").exist?
-      cp "#{etc}/openssl/cert.pem", "#{etc}/libressl"
-    else
-      touch "#{etc}/libressl/cert.pem"
+    keychains = %w[
+      /Library/Keychains/System.keychain
+      /System/Library/Keychains/SystemRootCertificates.keychain
+    ]
+
+    certs_list = `security find-certificate -a -p #{keychains.join(" ")}`
+    certs = certs_list.scan(
+      /-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----/m
+    )
+
+    valid_certs = certs.select do |cert|
+      IO.popen("openssl x509 -inform pem -checkend 0 -noout", "w") do |openssl_io|
+        openssl_io.write(cert)
+        openssl_io.close_write
+      end
+
+      $?.success?
     end
+
+    # LibreSSL install a default pem - We prefer to use OS X for consistency.
+    rm_f etc/"libressl/cert.pem"
+    (etc/"libressl/cert.pem").atomic_write(valid_certs.join("\n"))
   end
 
   def caveats; <<-EOS.undent
-    If you have OpenSSL installed, the .pem file has been copied
-    from there. Otherwise, a blank .pem file has been touched.
-    To add additional certificates, place .pem files in
-      #{etc}/libressl
+    A CA file has been bootstrapped using certificates from the system
+    keychain. To add additional certificates, place .pem files in
+      #{etc}/libressl/certs
+
+    and run
+      #{opt_bin}/openssl certhash #{etc}/libressl/certs
     EOS
   end
 
   test do
+    # Make sure the necessary .cnf file exists, otherwise LibreSSL gets moody.
+    assert (HOMEBREW_PREFIX/"etc/libressl/openssl.cnf").exist?,
+            "LibreSSL requires the .cnf file for some functionality"
+
+    # Check LibreSSL itself functions as expected.
     (testpath/"testfile.txt").write("This is a test file")
-    expected_checksum = "91b7b0b1e27bfbf7bc646946f35fa972c47c2d32"
-    system "#{bin}/openssl", "dgst", "-sha1", "-out", "checksum.txt", "testfile.txt"
+    expected_checksum = "e2d0fe1585a63ec6009c8016ff8dda8b17719a637405a4e23c0ff81339148249"
+    system "#{bin}/openssl", "dgst", "-sha256", "-out", "checksum.txt", "testfile.txt"
     open("checksum.txt") do |f|
       checksum = f.read(100).split("=").last.strip
       assert_equal checksum, expected_checksum

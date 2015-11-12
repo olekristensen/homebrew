@@ -1,23 +1,31 @@
-require "formula"
-
 class Wireshark < Formula
+  desc "Graphical network analyzer and capture tool"
   homepage "https://www.wireshark.org"
 
   stable do
-    url "https://www.wireshark.org/download/src/all-versions/wireshark-1.12.2.tar.bz2"
-    mirror "https://1.eu.dl.wireshark.org/src/wireshark-1.12.2.tar.bz2"
-    sha1 "0598fe285725f97045d7d08e6bde04686044b335"
+    url "https://www.wireshark.org/download/src/all-versions/wireshark-1.12.8.tar.bz2"
+    mirror "https://1.eu.dl.wireshark.org/src/wireshark-1.12.8.tar.bz2"
+    sha256 "357e0a4e49525d80cdc740bb16539fcdb526ad38cc2ed6cabedafc9bdee5c7e7"
 
     # Removes SDK checks that prevent the build from working on CLT-only systems
     # Reported upstream: https://bugs.wireshark.org/bugzilla/show_bug.cgi?id=9290
     patch :DATA
+
+    depends_on "homebrew/dupes/libpcap" => :optional
   end
 
   bottle do
-    revision 2
-    sha1 "6f7662eeef5a2827e65717725dcfc6f035104d27" => :yosemite
-    sha1 "4132e4ced51696ff52513ec55d5be79754f58d95" => :mavericks
-    sha1 "d9dee8926b364e76420aef082c17370fd65f72ac" => :mountain_lion
+    sha256 "011b9c1f55fdb42223af49b7bec04f387d5dd89d5b8a600faecca2011b776f08" => :el_capitan
+    sha256 "2db41f691c2700bcb8bd20141671b279298cf65049966601f7d6ee96b4496482" => :yosemite
+    sha256 "7980680d82cb4c3bf01c6b8c1f3970767773d9a09d5573e3ba418fe08f224bb4" => :mavericks
+  end
+
+  devel do
+    url "https://www.wireshark.org/download/src/all-versions/wireshark-2.0.0rc3.tar.bz2"
+    mirror "https://1.eu.dl.wireshark.org/src/wireshark-2.0.0rc3.tar.bz2"
+    sha256 "11f46b2d202f923c87a0b8e1a07bd9910bbcc5c265c69de3a23dde82e0f647e3"
+
+    depends_on "homebrew/dupes/libpcap" if MacOS.version == :mavericks
   end
 
   head do
@@ -28,15 +36,10 @@ class Wireshark < Formula
     depends_on "libtool" => :build
   end
 
-  devel do
-    url "https://www.wireshark.org/download/src/all-versions/wireshark-1.99.0.tar.bz2"
-    mirror "https://1.eu.dl.wireshark.org/src/wireshark-1.99.0.tar.bz2"
-    sha1 "2e5cf3209104b98251350b3a5e52401866916aec"
-  end
-
   option "with-gtk+3", "Build the wireshark command with gtk+3"
   option "with-gtk+", "Build the wireshark command with gtk+"
   option "with-qt", "Build the wireshark-qt command (can be used with or without either GTK option)"
+  option "with-qt5", "Build the wireshark-qt command with qt5 (can be used with or without either GTK option)"
   option "with-headers", "Install Wireshark library headers for plug-in development"
 
   depends_on "pkg-config" => :build
@@ -52,24 +55,33 @@ class Wireshark < Formula
   depends_on "libsmi" => :optional
   depends_on "lua" => :optional
   depends_on "portaudio" => :optional
+  depends_on "qt5" => :optional
   depends_on "qt" => :optional
   depends_on "gtk+3" => :optional
   depends_on "gtk+" => :optional
-  depends_on "homebrew/dupes/libpcap" => :optional
   depends_on "gnome-icon-theme" if build.with? "gtk+3"
 
   def install
-    args = ["--disable-dependency-tracking",
-            "--disable-silent-rules",
-            "--prefix=#{prefix}",
-            "--with-gnutls"]
+    no_gui = build.without?("gtk+3") && build.without?("qt") && build.without?("gtk+") && build.without?("qt5")
 
-    args << "--disable-wireshark" if build.without?("gtk+3") && build.without?("qt") && build.without?("gtk+")
+    args = %W[
+      --disable-dependency-tracking
+      --disable-silent-rules
+      --prefix=#{prefix}
+      --with-gnutls
+    ]
+
+    args << "--disable-wireshark" if no_gui
     args << "--disable-gtktest" if build.without?("gtk+3") && build.without?("gtk+")
-    args << "--with-qt" if build.with? "qt"
     args << "--with-gtk3" if build.with? "gtk+3"
     args << "--with-gtk2" if build.with? "gtk+"
     args << "--with-libcap=#{Formula["libpcap"].opt_prefix}" if build.with? "libpcap"
+
+    if build.with?("qt") || build.with?("qt5")
+      args << "--with-qt"
+    else
+      args << "--with-qt=no"
+    end
 
     if build.head?
       args << "--disable-warnings-as-errors"
@@ -113,7 +125,7 @@ class Wireshark < Formula
   end
 
   test do
-    system "#{bin}/randpkt", "-b", "100", "-c", "2", "capture.pcap"
+    system bin/"randpkt", "-b", "100", "-c", "2", "capture.pcap"
     output = shell_output("#{bin}/capinfos -Tmc capture.pcap")
     assert_equal "File name,Number of packets\ncapture.pcap,2\n", output
   end

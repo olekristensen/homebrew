@@ -1,19 +1,18 @@
-require 'formula'
-
 class Libmowgli < Formula
-  homepage 'http://www.atheme.org/project/mowgli'
-  url 'https://github.com/atheme/libmowgli-2/archive/libmowgli-2.0.0.tar.gz'
-  sha1 'dd3860fb116c4249456f13cd6c30c55e84388262'
+  desc "Core framework for Atheme applications"
+  homepage "https://github.com/atheme/libmowgli-2"
+  url "https://github.com/atheme/libmowgli-2/archive/libmowgli-2.0.0.tar.gz"
+  sha256 "fd48e74f1f706b436e0f25c3d3d63753e9c066ef88e662cd34303ccd3b780798"
   revision 1
 
-  head 'https://github.com/atheme/libmowgli-2.git'
+  head "https://github.com/atheme/libmowgli-2.git"
 
   bottle do
     cellar :any
-    revision 2
-    sha1 "0a3085258a8765dc8e5fbc505073416c1d3c9bb3" => :yosemite
-    sha1 "d282eac279ac76cdb01d355f919c45d41ed0c6c1" => :mavericks
-    sha1 "a9502beb46258594b84b62aef2d970ec05d52456" => :mountain_lion
+    revision 3
+    sha1 "3c8576b64db4e689e386376b66821b95a45716d4" => :yosemite
+    sha1 "21d241c7ef4f94bb0dd4407ac09ecb9fbde93660" => :mavericks
+    sha1 "b0a6bf09ca579425a935063b9c8b86ee7cceec53" => :mountain_lion
   end
 
   depends_on "openssl"

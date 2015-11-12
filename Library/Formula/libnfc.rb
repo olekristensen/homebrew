@@ -1,19 +1,19 @@
-require 'formula'
-
 class Libnfc < Formula
-  homepage 'http://www.libnfc.org/'
-  url 'https://libnfc.googlecode.com/files/libnfc-1.7.0.tar.bz2'
-  sha1 '5adfb6c6238b1659ad8609837dc8e59eb41a8768'
+  desc "Low level NFC SDK and Programmers API"
+  homepage "http://www.libnfc.org/"
+  url "https://libnfc.googlecode.com/files/libnfc-1.7.0.tar.bz2"
+  sha256 "f14df0727c301f9149608dc6e1fbad81ec48372dcd7a364ac1cb805a7a2b2b8b"
 
   bottle do
-    revision 1
-    sha1 "330b1d514c35dcf992e691b0b37b0ac295c1ff92" => :yosemite
-    sha1 "cc8ed520b9f18458802d6737faacaa47c6d834ec" => :mavericks
-    sha1 "bdae0709e9278e58a5438a93922055e7831ed90a" => :mountain_lion
+    revision 2
+    sha256 "76437c13d93466c6f64ebcdee2a8aea6fa54bf129755f368844713a7817b263e" => :el_capitan
+    sha1 "55ecc37dabd8c848975f3bbf20a8ab7eb191a788" => :yosemite
+    sha1 "13c61f303c9a2dc90d316f81ce7c615b8bb0e2f1" => :mavericks
+    sha1 "4d9b2216eb876d9a63fe0c0b168b2de0766d0a21" => :mountain_lion
   end
 
-  depends_on 'pkg-config' => :build
-  depends_on 'libusb-compat'
+  depends_on "pkg-config" => :build
+  depends_on "libusb-compat"
 
   # Fixes the lack of MIN macro in sys/param.h on OS X which causes the formula not to compile
   # Reported upstream:
@@ -23,9 +23,10 @@ class Libnfc < Formula
 
   def install
     system "./configure", "--disable-debug", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}", "--enable-serial-autoprobe"
-    system "make install"
-    (prefix/'etc/nfc/libnfc.conf').write "allow_intrusive_scan=yes"
+                          "--prefix=#{prefix}", "--enable-serial-autoprobe",
+                          "--with-drivers=all"
+    system "make", "install"
+    (prefix/"etc/nfc/libnfc.conf").write "allow_intrusive_scan=yes"
   end
 end
 

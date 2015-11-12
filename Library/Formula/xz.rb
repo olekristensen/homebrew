@@ -1,24 +1,17 @@
-require "formula"
-
 # Upstream project has requested we use a mirror as the main URL
 # https://github.com/Homebrew/homebrew/pull/21419
 class Xz < Formula
+  desc "General-purpose data compression with high compression ratio"
   homepage "http://tukaani.org/xz/"
-  url "http://fossies.org/linux/misc/xz-5.0.7.tar.bz2"
-  mirror "http://tukaani.org/xz/xz-5.0.7.tar.bz2"
-  sha256 "e8851dc749df2340dac6c9297cb2653eff684e73c3dedf690930119502edd616"
+  url "https://fossies.org/linux/misc/xz-5.2.2.tar.gz"
+  mirror "http://tukaani.org/xz/xz-5.2.2.tar.gz"
+  sha256 "73df4d5d34f0468bd57d09f2d8af363e95ed6cc3a4a86129d2f2c366259902a2"
 
   bottle do
     cellar :any
-    sha1 "9e340d49dcfd08d82b59211ec7778b384bfa59f8" => :yosemite
-    sha1 "c54becb676547560824fb873d6a04f24aa3e27aa" => :mavericks
-    sha1 "d3ee779d021906abde55b3672135a0cac27c73b0" => :mountain_lion
-    sha1 "99d721024996c74abf542373a03d85e121a0714a" => :lion
-  end
-
-  devel do
-    url 'http://tukaani.org/xz/xz-5.1.4beta.tar.gz'
-    sha256 "7c47b9e2cfb5be93245d9fcf2bec5b459412b7628c333896dded373dcd0cf0e0"
+    sha256 "7cfefbef7669a6959eb019ffba2d06b2c8f041fb826e89126c1ced23f03e2029" => :el_capitan
+    sha256 "cd13b4dea278b179eceebed9f07b79c95e7416d7cac0ba095173cc463149df46" => :yosemite
+    sha256 "9a5b520ae6a4cc728a7f5c4a15deb1dc2f150e3665d5afbc802b07f2a4fbd6e6" => :mavericks
   end
 
   option :universal

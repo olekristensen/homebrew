@@ -1,18 +1,16 @@
-require "formula"
-
 class Ejabberd < Formula
-  homepage "http://www.ejabberd.im"
-  url "https://www.process-one.net/downloads/ejabberd/14.07/ejabberd-14.07.tgz"
-  sha1 "321b28faedbc28f80664d4b301424b118dd0bad0"
-  revision 1
+  desc "XMPP application server"
+  homepage "https://www.ejabberd.im"
+  url "https://www.process-one.net/downloads/ejabberd/15.07/ejabberd-15.07.tgz"
+  sha256 "87d5001521cbb779b84bc74879e032e2514d9a651e24c4e40cce0907ab405bd1"
 
-  head 'https://github.com/processone/ejabberd.git'
+  head "https://github.com/processone/ejabberd.git"
 
   bottle do
-    revision 1
-    sha1 "bb51d214082e9e72f7f10f41d34dd0a3b5f81edf" => :mavericks
-    sha1 "3850af04f591854230ec4158b62520f121e32232" => :mountain_lion
-    sha1 "22871728227cb497381181794b8a7401d1c1beb8" => :lion
+    sha256 "4001c8bf43972697862ead67f944177c6a6b771c96a4d6de75f68694ed7aa620" => :el_capitan
+    sha256 "592a3412890d52da9d8a9f43a288dca8eab233dcd0c59d17d4bd8f89b7b4567b" => :yosemite
+    sha256 "17b97c88ea724e8816c445a944ad71a9be141cf9afe8e4f168dd271ea2bd8448" => :mavericks
+    sha256 "f53c7307acaee6aafa813785ede998900c0c32db2d0f28dfb5dd51c45b6f5366" => :mountain_lion
   end
 
   option "32-bit"
@@ -27,11 +25,9 @@ class Ejabberd < Formula
     ENV["TARGET_DIR"] = ENV["DESTDIR"] = "#{lib}/ejabberd/erlang/lib/ejabberd-#{version}"
     ENV["MAN_DIR"] = man
     ENV["SBIN_DIR"] = sbin
-    # Homebrew's 'C compiler cannot create executables' bug workaround
-    ENV["HOMEBREW_ARCHFLAGS"] = " "
 
     if build.build_32_bit?
-      ENV.append %w{CFLAGS LDFLAGS}, "-arch #{Hardware::CPU.arch_32_bit}"
+      ENV.append %w[CFLAGS LDFLAGS], "-arch #{Hardware::CPU.arch_32_bit}"
     end
 
     args = ["--prefix=#{prefix}",
@@ -40,7 +36,8 @@ class Ejabberd < Formula
             "--enable-pgsql",
             "--enable-mysql",
             "--enable-odbc",
-            "--enable-pam"]
+            "--enable-pam",
+           ]
 
     system "./configure", *args
     system "make"
@@ -65,6 +62,11 @@ class Ejabberd < Formula
     <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
     <plist version="1.0">
     <dict>
+      <key>EnvironmentVariables</key>
+      <dict>
+        <key>HOME</key>
+        <string>#{var}/lib/ejabberd</string>
+      </dict>
       <key>Label</key>
       <string>#{plist_name}</string>
       <key>ProgramArguments</key>
@@ -74,9 +76,10 @@ class Ejabberd < Formula
       </array>
       <key>RunAtLoad</key>
       <true/>
+      <key>WorkingDirectory</key>
+      <string>#{var}/lib/ejabberd</string>
     </dict>
     </plist>
     EOS
   end
-
 end

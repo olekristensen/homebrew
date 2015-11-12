@@ -1,31 +1,28 @@
-require "formula"
-
 class Capnp < Formula
-  homepage "http://kentonv.github.io/capnproto/"
-  url "http://capnproto.org/capnproto-c++-0.4.1.tar.gz"
-  sha1 "18ce1a404c2bf68e6625e44927bfe6b67186cb15"
+  desc "Data interchange format and capability-based RPC system"
+  homepage "https://capnproto.org/"
+  url "https://capnproto.org/capnproto-c++-0.5.3.tar.gz"
+  sha256 "cdb17c792493bdcd4a24bcd196eb09f70ee64c83a3eccb0bc6534ff560536afb"
 
   bottle do
-    cellar :any
-    sha1 "e980920f619a0682b1335550844b065894ed43ac" => :yosemite
-    sha1 "37a57c4a451723d7aa63dce453d35c65dce38a6e" => :mavericks
-    sha1 "8d7cc81fe1e7356eea9b422cc59ecbb1cef8f808" => :mountain_lion
+    cellar :any_skip_relocation
+    sha256 "d614f361c80a3218d4f5bed478f98a97f00d816dbd53730bd17cbc5ccb517166" => :el_capitan
+    sha256 "bd5a6b2c7961bad80928fdcf612619495e0c9208fe69ba5c207b797cd9fc8bb2" => :yosemite
+    sha256 "f99f439becc2eb9bf12e60cb8af0245fffee9aecf9ed07dc460196fe3f2d5f6e" => :mavericks
+    sha256 "9c11b6174a97e022be4ebe5e05435818234dedc11c194afe09bce81fbf8f9a50" => :mountain_lion
   end
 
   needs :cxx11
-  option "without-shared", "Disable building shared library variant"
+  depends_on "cmake" => :build
 
   def install
-    args = ["--disable-debug",
-            "--disable-dependency-tracking",
-            "--disable-silent-rules",
-            "--prefix=#{prefix}"]
+    ENV.cxx11
 
-    args << "--disable-shared" if build.without? "shared"
-
-    system "./configure", *args
-    system "make", "check"
-    system "make", "install"
+    mkdir "build" do
+      system "cmake", "..", *std_cmake_args
+      system "make", "check"
+      system "make", "install"
+    end
   end
 
   test do

@@ -1,28 +1,21 @@
-require 'formula'
-
 class BoostBuild < Formula
-  homepage 'http://boost.org/boost-build2/'
-  url 'https://github.com/boostorg/build/archive/boost-1.55.0.tar.gz'
-  sha1 '9daf7587b017716ffd164bcf11d82c4ac00c8ca0'
+  desc "C++ build system"
+  homepage "http://boost.org/boost-build2/"
+  url "https://github.com/boostorg/build/archive/2014.10.tar.gz"
+  sha256 "d143297d61e7c628fc40c6117d0df41cb40b33845376c331d7574f9a79b72b9f"
 
-  head 'https://github.com/boostorg/build.git'
+  head "https://github.com/boostorg/build.git"
 
   bottle do
-    cellar :any
-    sha1 "b2d64e89dff33d0ddf55c30cb2bca1f015ac1d7a" => :yosemite
-    sha1 "15905ff6a6324951e1b0d63761b8d1a4dac00861" => :mavericks
-    sha1 "bb2094e4f4747dded749ddbb7d697cd7f9174740" => :mountain_lion
+    cellar :any_skip_relocation
+    sha256 "54e173a7e91aef66bfdb5c497156915518d69dd9a062552ab48e62d443adaa04" => :el_capitan
+    sha1 "e1ab34b88ac324bfa985d91a857ecdcd86e06541" => :yosemite
+    sha1 "0d8f9f91809f3b3b7b5eeb5e70cb92ed2a7ec42b" => :mavericks
+    sha1 "19db795fdbbcbc4f5916e8c9d249fe0c05bad1b5" => :mountain_lion
   end
 
   def install
-    if build.head?
-      system "./bootstrap.sh"
-      system "./b2", "--prefix=#{prefix}", "install"
-    else
-      cd 'v2' do
-        system "./bootstrap.sh"
-        system "./b2", "--prefix=#{prefix}", "install"
-      end
-    end
+    system "./bootstrap.sh"
+    system "./b2", "--prefix=#{prefix}", "install"
   end
 end

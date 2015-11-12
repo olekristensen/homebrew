@@ -1,16 +1,14 @@
-require "formula"
-
 class Fwknop < Formula
-  homepage "http://www.cipherdyne.org/fwknop/"
+  desc "Single Packet Authorization and Port Knocking"
+  homepage "https://www.cipherdyne.org/fwknop/"
+  url "https://github.com/mrash/fwknop/archive/2.6.7.tar.gz"
+  sha256 "e96c13f725a4c3829c842743b14aedf591d30570df5c06556862a900b64def86"
   head "https://github.com/mrash/fwknop.git"
-  url "https://github.com/mrash/fwknop/archive/2.6.4.tar.gz"
-  sha1 "b13ef022ade7da6dc5b08335d5a1d29dd898887b"
-  revision 1
 
   bottle do
-    sha1 "f82b7596356044e1b6b0c41ede54bfcc11b3585a" => :yosemite
-    sha1 "6488990ef06c578ab92c6fb74dd0b3af24e5c934" => :mavericks
-    sha1 "20fc1fc8b38e1e24d33f1d7197aa1dae5dbc9d70" => :mountain_lion
+    sha256 "d00d233db7cb2cb04c50ee792756d76cfda37f2c6bc210e313375dca01d8f4d1" => :yosemite
+    sha256 "a69bbd4435378eb2b6b5a8046d3562aef0f22152b50521c106700aa53f221724" => :mavericks
+    sha256 "c003419be9572eab4fa791bb43b4faa63235caadac15f3cb1d1f38b555b927ef" => :mountain_lion
   end
 
   depends_on "automake" => :build
@@ -22,12 +20,14 @@ class Fwknop < Formula
   def install
     system "./autogen.sh"
     system "./configure", "--disable-dependency-tracking", "--disable-silent-rules",
-                          "--prefix=#{prefix}", "--with-gpgme",
+                          "--prefix=#{prefix}", "--with-gpgme", "--sysconfdir=#{etc}",
                           "--with-gpg=#{Formula["gnupg2"].opt_prefix}/bin/gpg2"
     system "make", "install"
   end
 
   test do
+    touch testpath/".fwknoprc"
+    chmod 0600, testpath/".fwknoprc"
     system "#{bin}/fwknop", "--version"
   end
 end
